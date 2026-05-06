@@ -1,16 +1,20 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TransactionsManager.Contracts.Api.Transactions;
+using TransactionsManager.Contracts.Events;
 using TransactionsManager.Contracts.Regions;
 using TransactionsManager.Contracts.Transactions;
 using TransactionsManager.GatewayApi.Data;
 using TransactionsManager.GatewayApi.Data.Entities;
+using TransactionsManager.GatewayApi.Messaging;
 
 namespace TransactionsManager.GatewayApi.Controllers;
 
 [ApiController]
 [Route("api/transactions")]
-public sealed class TransactionsController(GatewayDbContext dbContext) : ControllerBase
+public sealed class TransactionsController(
+    GatewayDbContext dbContext,
+    IEventPublisher eventPublisher) : ControllerBase
 {
     [HttpPost]
     public async Task<ActionResult<CreateTransactionResponse>> Create(
@@ -43,6 +47,23 @@ public sealed class TransactionsController(GatewayDbContext dbContext) : Control
 
         dbContext.Transactions.Add(transaction);
         await dbContext.SaveChangesAsync(cancellationToken);
+
+        var transactionSubmitted = new TransactionSubmittedV1(
+            EventId: Guid.NewGuid(),
+            OccurredAtUtc: DateTimeOffset.UtcNow,
+            TransactionId: transaction.Id,
+            Amount: transaction.Amount,
+            Currency: transaction.Currency,
+            MerchantName: transaction.MerchantName,
+            Region: transaction.Region,
+            SubmittedAtUtc: transaction.SubmittedAtUtc,
+            CorrelationId: transaction.CorrelationId);
+
+        await eventPublisher.PublishTransactionSubmittedAsync(
+            transactionSubmitted,
+            transactionSubmitted.EventId,
+            transactionSubmitted.CorrelationId,
+            cancellationToken);
 
         return Accepted(new CreateTransactionResponse(transaction.Id, transaction.Status));
     }
