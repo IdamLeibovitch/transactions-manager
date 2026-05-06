@@ -41,8 +41,8 @@ This commit only initializes the monorepo structure and planning docs. No applic
 ## Planned Local Ports
 
 - Client: `5173`
-- Gateway API: `5000`
-- Notification service: `5001`
+- Gateway API: `5080`
+- Notification service: `5081`
 - RabbitMQ Management: `15673`
 - RabbitMQ AMQP host port: `5673`
 - MSSQL: `1433`
