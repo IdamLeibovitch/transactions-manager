@@ -1,0 +1,53 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Gateway API",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build backend",
+      "program": "${workspaceFolder}/src/backend/GatewayApi/bin/Debug/net10.0/TransactionsManager.GatewayApi.dll",
+      "cwd": "${workspaceFolder}/src/backend/GatewayApi",
+      "envFile": "${workspaceFolder}/.env",
+      "env": {
+        "ASPNETCORE_URLS": "http://localhost:5080"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(http://\\S+)"
+      }
+    },
+    {
+      "name": "Notification Service",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build backend",
+      "program": "${workspaceFolder}/src/backend/NotificationService/bin/Debug/net10.0/TransactionsManager.NotificationService.dll",
+      "cwd": "${workspaceFolder}/src/backend/NotificationService",
+      "envFile": "${workspaceFolder}/.env",
+      "env": {
+        "ASPNETCORE_URLS": "http://localhost:5081"
+      }
+    },
+    {
+      "name": "Transaction Processor",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build backend",
+      "program": "${workspaceFolder}/src/backend/TransactionProcessor/bin/Debug/net10.0/TransactionsManager.TransactionProcessor.dll",
+      "cwd": "${workspaceFolder}/src/backend/TransactionProcessor",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Backend Services",
+      "configurations": [
+        "Gateway API",
+        "Notification Service",
+        "Transaction Processor"
+      ],
+      "stopAll": true
+    }
+  ]
+}

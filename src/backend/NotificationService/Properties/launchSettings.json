@@ -7,7 +7,14 @@
       "launchBrowser": false,
       "applicationUrl": "http://localhost:5081",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "RabbitMq__Host": "localhost",
+        "RabbitMq__Port": "5673",
+        "RabbitMq__Username": "guest",
+        "RabbitMq__Password": "guest",
+        "Jwt__Issuer": "transactions-manager",
+        "Jwt__Audience": "transactions-manager-client",
+        "Jwt__SigningKey": "development-only-signing-key-change-before-production"
       }
     }
   }

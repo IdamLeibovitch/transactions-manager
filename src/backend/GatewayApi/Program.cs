@@ -1,9 +1,24 @@
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
+using TransactionsManager.GatewayApi.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddDbContext<GatewayDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServer")));
+
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+
+using (IServiceScope scope = app.Services.CreateScope())
+{
+    GatewayDbContext dbContext = scope.ServiceProvider.GetRequiredService<GatewayDbContext>();
+    dbContext.Database.Migrate();
+}
 
 app.MapControllers();
 app.MapHealthChecks("/health");

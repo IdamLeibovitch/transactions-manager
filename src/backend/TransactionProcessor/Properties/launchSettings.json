@@ -5,7 +5,11 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "environmentVariables": {
-        "DOTNET_ENVIRONMENT": "Development"
+        "DOTNET_ENVIRONMENT": "Development",
+        "RabbitMq__Host": "localhost",
+        "RabbitMq__Port": "5673",
+        "RabbitMq__Username": "guest",
+        "RabbitMq__Password": "guest"
       }
     }
   }

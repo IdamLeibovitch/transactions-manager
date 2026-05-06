@@ -18,3 +18,7 @@
 
 - Gateway API: `http://localhost:5080`
 - Notification service: `http://localhost:5081`
+
+## Gateway API
+
+The gateway owns transaction persistence. On startup it applies EF Core migrations to the configured SQL Server database.

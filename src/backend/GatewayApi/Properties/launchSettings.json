@@ -7,7 +7,12 @@
       "launchBrowser": false,
       "applicationUrl": "http://localhost:5080",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ConnectionStrings__SqlServer": "Server=localhost,1433;Database=TransactionsManager;User Id=sa;Password=Change_this_password_123!;TrustServerCertificate=True",
+        "RabbitMq__Host": "localhost",
+        "RabbitMq__Port": "5673",
+        "RabbitMq__Username": "guest",
+        "RabbitMq__Password": "guest"
       }
     }
   }

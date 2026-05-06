@@ -56,3 +56,9 @@ docker compose up -d mssql rabbitmq
 ```
 
 See [docs/local-infrastructure.md](docs/local-infrastructure.md) for details.
+
+Run the gateway API:
+
+```bash
+dotnet run --project src/backend/GatewayApi/TransactionsManager.GatewayApi.csproj
+```
