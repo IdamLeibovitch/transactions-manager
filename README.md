@@ -43,6 +43,16 @@ This commit only initializes the monorepo structure and planning docs. No applic
 - Client: `5173`
 - Gateway API: `5000`
 - Notification service: `5001`
-- RabbitMQ Management: `15672`
+- RabbitMQ Management: `15673`
+- RabbitMQ AMQP host port: `5673`
 - MSSQL: `1433`
 
+## Local Infrastructure
+
+Run MSSQL and RabbitMQ:
+
+```bash
+docker compose up -d mssql rabbitmq
+```
+
+See [docs/local-infrastructure.md](docs/local-infrastructure.md) for details.
