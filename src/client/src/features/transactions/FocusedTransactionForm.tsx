@@ -1,11 +1,9 @@
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import SendIcon from '@mui/icons-material/Send'
 import {
-  Alert,
   Autocomplete,
   Box,
   Button,
-  Collapse,
   IconButton,
   Paper,
   Stack,
@@ -39,7 +37,7 @@ export function FocusedTransactionForm({
   isSubmitting,
   onSubmit,
 }: FocusedTransactionFormProps) {
-  const { t } = useLocalization()
+  const { direction, t } = useLocalization()
   const timeZoneOptions = useMemo(
     () =>
       regions.map((region) => ({
@@ -54,7 +52,7 @@ export function FocusedTransactionForm({
   const [submittedTime, setSubmittedTime] = useState<TimeParts>(() =>
     toTimeParts(formatTimeInputValue(new Date(), timeZoneOptions[0].timeZone)),
   )
-  const [isPickerOpen, setIsPickerOpen] = useState(false)
+  const [timeEntryMode, setTimeEntryMode] = useState<'text' | 'picker'>('text')
   const [submitted, setSubmitted] = useState(false)
   const hourInputRef = useRef<HTMLInputElement | null>(null)
   const minuteInputRef = useRef<HTMLInputElement | null>(null)
@@ -162,17 +160,6 @@ export function FocusedTransactionForm({
       }}
     >
       <Stack spacing={3}>
-        <Stack spacing={0.75} sx={{ textAlign: 'center' }}>
-          <Typography component="h1" sx={{ fontWeight: 700 }} variant="h4">
-            {t('focused.title')}
-          </Typography>
-          <Typography color="text.secondary">
-            {t('focused.subtitle')}
-          </Typography>
-        </Stack>
-
-        {submitted && isTimeInvalid && <Alert severity="error">{t('validation.submittedAt')}</Alert>}
-
         <Stack spacing={2.5}>
           <Autocomplete
             disableClearable
@@ -204,95 +191,60 @@ export function FocusedTransactionForm({
                 {t('form.enterTime')}
               </Typography>
 
-              <Stack
-                aria-describedby={timeDescriptionIds}
-                aria-labelledby={timeGroupLabelId}
-                direction="row"
-                role="group"
-                spacing={{ xs: 1.5, sm: 2 }}
-                sx={{ alignItems: 'flex-start' }}
-              >
-                <TimePartInput
-                  ariaLabel={t('form.hour')}
-                  describedBy={timeDescriptionIds}
-                  disabled={isDisabled || isSubmitting}
-                  error={submitted && !isValidHour(submittedTime.hour)}
-                  inputRef={hourInputRef}
-                  label={t('form.hour')}
-                  max={23}
-                  onChange={(value) => handleTimePartChange('hour', value)}
-                  onMax={() => handleTimePartBoundary('hour', 'max')}
-                  onMin={() => handleTimePartBoundary('hour', 'min')}
-                  onMoveNext={() => minuteInputRef.current?.focus()}
-                  onNormalize={() => handleTimePartBlur('hour')}
-                  onStep={(step) => handleTimePartStep('hour', step)}
-                  value={submittedTime.hour}
-                />
-                <Typography
-                  sx={{
-                    color: 'text.primary',
-                    fontSize: { xs: 48, sm: 64 },
-                    fontWeight: 700,
-                    lineHeight: 1.05,
-                    pt: 1.5,
-                  }}
+              {timeEntryMode === 'text' ? (
+                <Stack
+                  aria-describedby={timeDescriptionIds}
+                  aria-labelledby={timeGroupLabelId}
+                  direction="row"
+                  role="group"
+                  spacing={{ xs: 1.5, sm: 2 }}
+                  sx={{ alignItems: 'flex-start' }}
                 >
-                  :
-                </Typography>
-                <TimePartInput
-                  ariaLabel={t('form.minute')}
-                  describedBy={timeDescriptionIds}
-                  disabled={isDisabled || isSubmitting}
-                  error={submitted && !isValidMinute(submittedTime.minute)}
-                  inputRef={minuteInputRef}
-                  label={t('form.minute')}
-                  max={59}
-                  onChange={(value) => handleTimePartChange('minute', value)}
-                  onMax={() => handleTimePartBoundary('minute', 'max')}
-                  onMin={() => handleTimePartBoundary('minute', 'min')}
-                  onMovePrevious={() => hourInputRef.current?.focus()}
-                  onNormalize={() => handleTimePartBlur('minute')}
-                  onStep={(step) => handleTimePartStep('minute', step)}
-                  value={submittedTime.minute}
-                />
-              </Stack>
-
-              <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-                <Tooltip title={t('form.timePicker')}>
-                  <IconButton
-                    aria-label={t('form.timePicker')}
+                  <TimePartInput
+                    ariaLabel={t('form.hour')}
+                    describedBy={timeDescriptionIds}
                     disabled={isDisabled || isSubmitting}
-                    onClick={() => setIsPickerOpen((current) => !current)}
+                    error={submitted && !isValidHour(submittedTime.hour)}
+                    inputRef={hourInputRef}
+                    label={t('form.hour')}
+                    max={23}
+                    onChange={(value) => handleTimePartChange('hour', value)}
+                    onMax={() => handleTimePartBoundary('hour', 'max')}
+                    onMin={() => handleTimePartBoundary('hour', 'min')}
+                    onMoveNext={() => minuteInputRef.current?.focus()}
+                    onNormalize={() => handleTimePartBlur('hour')}
+                    onStep={(step) => handleTimePartStep('hour', step)}
+                    value={submittedTime.hour}
+                  />
+                  <Typography
+                    sx={{
+                      color: 'text.primary',
+                      fontSize: { xs: 48, sm: 64 },
+                      fontWeight: 700,
+                      lineHeight: 1.05,
+                      pt: 1.5,
+                    }}
                   >
-                    <AccessTimeIcon />
-                  </IconButton>
-                </Tooltip>
-                <Typography
-                  color={submitted && isTimeInvalid ? 'error' : 'text.secondary'}
-                  id={timeHelperId}
-                  variant="body2"
-                >
-                  {submitted && isTimeInvalid ? t('validation.submittedAt') : t('form.localTimeHelper')}
-                </Typography>
-                <Typography
-                  id={timeKeyboardHelpId}
-                  sx={{
-                    border: 0,
-                    clip: 'rect(0 0 0 0)',
-                    height: 1,
-                    m: -1,
-                    overflow: 'hidden',
-                    p: 0,
-                    position: 'absolute',
-                    whiteSpace: 'nowrap',
-                    width: 1,
-                  }}
-                >
-                  {t('form.timeKeyboardHelp')}
-                </Typography>
-              </Stack>
-
-              <Collapse in={isPickerOpen} unmountOnExit>
+                    :
+                  </Typography>
+                  <TimePartInput
+                    ariaLabel={t('form.minute')}
+                    describedBy={timeDescriptionIds}
+                    disabled={isDisabled || isSubmitting}
+                    error={submitted && !isValidMinute(submittedTime.minute)}
+                    inputRef={minuteInputRef}
+                    label={t('form.minute')}
+                    max={59}
+                    onChange={(value) => handleTimePartChange('minute', value)}
+                    onMax={() => handleTimePartBoundary('minute', 'max')}
+                    onMin={() => handleTimePartBoundary('minute', 'min')}
+                    onMovePrevious={() => hourInputRef.current?.focus()}
+                    onNormalize={() => handleTimePartBlur('minute')}
+                    onStep={(step) => handleTimePartStep('minute', step)}
+                    value={submittedTime.minute}
+                  />
+                </Stack>
+              ) : (
                 <Box
                   sx={{
                     '& .MuiPickersLayout-root': {
@@ -317,7 +269,47 @@ export function FocusedTransactionForm({
                     />
                   </DatePickerLocalizationProvider>
                 </Box>
-              </Collapse>
+              )}
+
+              <Stack
+                direction="row"
+                sx={{ alignItems: 'center', direction: 'ltr', justifyContent: 'space-between' }}
+              >
+                <Tooltip title={timeEntryMode === 'text' ? t('form.timePicker') : t('form.textTimeInput')}>
+                  <IconButton
+                    aria-label={timeEntryMode === 'text' ? t('form.timePicker') : t('form.textTimeInput')}
+                    disabled={isDisabled || isSubmitting}
+                    onClick={() => setTimeEntryMode((current) => (current === 'text' ? 'picker' : 'text'))}
+                  >
+                    <AccessTimeIcon />
+                  </IconButton>
+                </Tooltip>
+                <Typography
+                  color="text.secondary"
+                  id={timeHelperId}
+                  sx={{ direction, textAlign: 'end' }}
+                  variant="body2"
+                >
+                  {t('form.localTimeHelper')}
+                </Typography>
+                <Typography
+                  id={timeKeyboardHelpId}
+                  sx={{
+                    border: 0,
+                    clip: 'rect(0 0 0 0)',
+                    height: 1,
+                    m: -1,
+                    overflow: 'hidden',
+                    p: 0,
+                    position: 'absolute',
+                    whiteSpace: 'nowrap',
+                    width: 1,
+                  }}
+                >
+                  {t('form.timeKeyboardHelp')}
+                </Typography>
+              </Stack>
+
             </Stack>
           </Box>
 

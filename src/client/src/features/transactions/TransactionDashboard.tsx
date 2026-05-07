@@ -32,6 +32,14 @@ type TransactionDashboardProps = {
   viewMode: TransactionViewMode
 }
 
+const marketingImages = [
+  'https://www.shva.co.il/wp-content/uploads/2023/03/canon-might-be-animated.png',
+  'https://www.shva.co.il/wp-content/uploads/2023/06/ashrait.png',
+  'https://www.shva.co.il/wp-content/uploads/2023/06/%D7%94%D7%95%D7%A8%D7%90%D7%AA.png',
+  'https://www.shva.co.il/wp-content/uploads/2023/06/top.png',
+  'https://www.shva.co.il/wp-content/uploads/2023/06/clp.png',
+]
+
 export function TransactionDashboard({ accessToken, viewMode }: TransactionDashboardProps) {
   const { t } = useLocalization()
   const [approvedTransactions, setApprovedTransactions] = useState<TransactionDto[]>([])
@@ -206,13 +214,18 @@ export function TransactionDashboard({ accessToken, viewMode }: TransactionDashb
 
   return viewMode === 'focused' ? (
     <Stack spacing={{ xs: 4, md: 5 }}>
-      <Box sx={{ mx: 'auto', width: '100%', maxWidth: 560 }}>
-        <FocusedTransactionForm
-          isSubmitting={isSubmitting}
-          isDisabled={!accessToken}
-          onSubmit={handleSubmit}
-        />
-      </Box>
+      <Grid container spacing={{ xs: 3, md: 5 }} sx={{ alignItems: 'center' }}>
+        <Grid size={{ xs: 12, md: 5 }}>
+          <FocusedTransactionForm
+            isSubmitting={isSubmitting}
+            isDisabled={!accessToken}
+            onSubmit={handleSubmit}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 7 }}>
+          <FocusedMarketingPanel />
+        </Grid>
+      </Grid>
 
       <ApprovedTransactionCards
         error={approvedError}
@@ -302,6 +315,68 @@ export function TransactionDashboard({ accessToken, viewMode }: TransactionDashb
         </Alert>
       </Snackbar>
     </Stack>
+  )
+}
+
+function FocusedMarketingPanel() {
+  const { t } = useLocalization()
+  const [imageIndex, setImageIndex] = useState(0)
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setImageIndex((current) => (current + 1) % marketingImages.length)
+    }, 3500)
+
+    return () => window.clearInterval(intervalId)
+  }, [])
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        bgcolor: 'transparent',
+        minHeight: { md: 360 },
+        p: { xs: 1, md: 2 },
+      }}
+    >
+      <Grid container spacing={3} sx={{ alignItems: 'center', height: '100%' }}>
+        <Grid size={{ xs: 12, lg: 7 }}>
+          <Stack spacing={2}>
+            <Typography color="primary" sx={{ fontWeight: 700 }}>
+              {t('marketing.eyebrow')}
+            </Typography>
+            <Typography
+              component="h1"
+              sx={{
+                color: 'text.primary',
+                fontSize: { xs: 32, md: 44 },
+                fontWeight: 800,
+                lineHeight: 1.12,
+              }}
+            >
+              {t('marketing.title')}
+            </Typography>
+            <Typography color="text.secondary" sx={{ fontSize: { xs: 16, md: 18 }, lineHeight: 1.8 }}>
+              {t('marketing.subtitle')}
+            </Typography>
+          </Stack>
+        </Grid>
+        <Grid size={{ lg: 5 }} sx={{ display: { xs: 'none', lg: 'block' } }}>
+          <Box
+            alt=""
+            component="img"
+            src={marketingImages[imageIndex]}
+            sx={{
+              display: 'block',
+              maxHeight: 280,
+              maxWidth: '100%',
+              objectFit: 'contain',
+              width: '100%',
+            }}
+          />
+        </Grid>
+      </Grid>
+    </Paper>
   )
 }
 
