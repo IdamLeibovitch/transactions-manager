@@ -61,9 +61,28 @@ export function FocusedTransactionsViewer({
 
   return (
     <Box>
-      <Typography component="h2" sx={{ fontWeight: 700, mb: 2 }} variant="h5">
-        {t('cards.approvedTransactions')}
-      </Typography>
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Typography component="h2" sx={{ fontWeight: 700 }} variant="h5">
+          {t('cards.approvedTransactions')}
+        </Typography>
+
+        {!showSideButtons && approvedTransactions.length > 0 && (
+          <Stack direction="row" spacing={0.5}>
+            <TransactionNavigationButton
+              action="previous"
+              disabled={approvedTransactions.length === 0}
+              onClick={() => scrollTransactions('previous')}
+              title={t('cards.previous')}
+            />
+            <TransactionNavigationButton
+              action="next"
+              disabled={approvedTransactions.length === 0}
+              onClick={() => scrollTransactions('next')}
+              title={t('cards.next')}
+            />
+          </Stack>
+        )}
+      </Stack>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -83,23 +102,6 @@ export function FocusedTransactionsViewer({
         </Card>
       ) : (
         <Stack spacing={1}>
-          {!showSideButtons && (
-            <Stack direction="row" spacing={0.5} sx={{ justifyContent: 'flex-end' }}>
-              <TransactionNavigationButton
-                action="previous"
-                disabled={approvedTransactions.length === 0}
-                onClick={() => scrollTransactions('previous')}
-                title={t('cards.previous')}
-              />
-              <TransactionNavigationButton
-                action="next"
-                disabled={approvedTransactions.length === 0}
-                onClick={() => scrollTransactions('next')}
-                title={t('cards.next')}
-              />
-            </Stack>
-          )}
-
           <Box sx={{ position: 'relative', px: { lg: 5 } }}>
             {showSideButtons && (
               <TransactionNavigationButton
