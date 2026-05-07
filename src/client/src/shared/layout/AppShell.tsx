@@ -1,5 +1,7 @@
 import AccountCircleIcon from '@mui/icons-material/AccountCircle'
+import CheckIcon from '@mui/icons-material/Check'
 import LogoutIcon from '@mui/icons-material/Logout'
+import ViewCarouselIcon from '@mui/icons-material/ViewCarousel'
 import {
   AppBar,
   Box,
@@ -17,6 +19,7 @@ import {
 import { useState, type MouseEvent, type ReactNode } from 'react'
 import { useLocalization } from '../../app/LocalizationContext'
 import type { Language } from '../../app/localization'
+import type { TransactionViewMode } from '../../features/transactions/transactionViewTypes'
 
 type AppShellProps = {
   children: ReactNode
@@ -24,6 +27,8 @@ type AppShellProps = {
   language: Language
   onLanguageChange: (language: Language) => void
   onLogoutClick: () => void
+  onViewModeChange: (viewMode: TransactionViewMode) => void
+  viewMode: TransactionViewMode
   username?: string
 }
 
@@ -33,6 +38,8 @@ export function AppShell({
   language,
   onLanguageChange,
   onLogoutClick,
+  onViewModeChange,
+  viewMode,
   username,
 }: AppShellProps) {
   const { direction, t } = useLocalization()
@@ -51,6 +58,11 @@ export function AppShell({
   function handleLogout() {
     handleAccountClose()
     onLogoutClick()
+  }
+
+  function handleViewModeChange(nextViewMode: TransactionViewMode) {
+    onViewModeChange(nextViewMode)
+    handleAccountClose()
   }
 
   return (
@@ -121,6 +133,18 @@ export function AppShell({
                   }}
                 >
                   <MenuItem disabled>{username}</MenuItem>
+                  <MenuItem onClick={() => handleViewModeChange('focused')}>
+                    <ListItemIcon>
+                      {viewMode === 'focused' ? <CheckIcon fontSize="small" /> : <ViewCarouselIcon fontSize="small" />}
+                    </ListItemIcon>
+                    <ListItemText>{t('view.focused')}</ListItemText>
+                  </MenuItem>
+                  <MenuItem onClick={() => handleViewModeChange('detailed')}>
+                    <ListItemIcon>
+                      {viewMode === 'detailed' ? <CheckIcon fontSize="small" /> : <ViewCarouselIcon fontSize="small" />}
+                    </ListItemIcon>
+                    <ListItemText>{t('view.detailed')}</ListItemText>
+                  </MenuItem>
                   <MenuItem onClick={handleLogout}>
                     <ListItemIcon>
                       <LogoutIcon fontSize="small" />

@@ -14,12 +14,14 @@ import { useCallback, useEffect, useState } from 'react'
 import { useLocalization } from '../../app/LocalizationContext'
 import { interpolate } from '../../app/localization'
 import { ApprovedTransactionCards } from './ApprovedTransactionCards'
+import { FocusedTransactionForm } from './FocusedTransactionForm'
 import { TransactionForm } from './TransactionForm'
 import type {
   CreateTransactionRequest,
   TransactionDto,
   TransactionStatusChangedMessage,
 } from './transactionTypes'
+import type { TransactionViewMode } from './transactionViewTypes'
 import { createTransaction, getTransaction, listTransactions } from './transactionsApi'
 import { createTransactionsHubConnection } from './transactionsHub'
 
@@ -27,9 +29,10 @@ type RealtimeStatus = 'connected' | 'connecting' | 'disconnected'
 
 type TransactionDashboardProps = {
   accessToken: string | null
+  viewMode: TransactionViewMode
 }
 
-export function TransactionDashboard({ accessToken }: TransactionDashboardProps) {
+export function TransactionDashboard({ accessToken, viewMode }: TransactionDashboardProps) {
   const { t } = useLocalization()
   const [approvedTransactions, setApprovedTransactions] = useState<TransactionDto[]>([])
   const [isLoadingApproved, setIsLoadingApproved] = useState(Boolean(accessToken))
@@ -201,7 +204,35 @@ export function TransactionDashboard({ accessToken }: TransactionDashboardProps)
     }
   }
 
-  return (
+  return viewMode === 'focused' ? (
+    <Stack spacing={{ xs: 4, md: 5 }}>
+      <Box sx={{ mx: 'auto', width: '100%', maxWidth: 560 }}>
+        <FocusedTransactionForm
+          isSubmitting={isSubmitting}
+          isDisabled={!accessToken}
+          onSubmit={handleSubmit}
+        />
+      </Box>
+
+      <ApprovedTransactionCards
+        error={approvedError}
+        isLoading={isLoadingApproved}
+        onRefresh={loadApprovedTransactions}
+        realtimeStatus={realtimeStatus}
+        transactions={approvedTransactions}
+      />
+
+      <Snackbar
+        autoHideDuration={5000}
+        onClose={() => setSubmitMessage(null)}
+        open={Boolean(submitMessage)}
+      >
+        <Alert onClose={() => setSubmitMessage(null)} severity="info" variant="filled">
+          {submitMessage}
+        </Alert>
+      </Snackbar>
+    </Stack>
+  ) : (
     <Stack spacing={3}>
       <Stack spacing={1}>
         <Typography component="h2" sx={{ fontWeight: 700 }} variant="h4">

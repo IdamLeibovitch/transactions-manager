@@ -1,3 +1,5 @@
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import {
@@ -8,13 +10,16 @@ import {
   CardContent,
   Chip,
   CircularProgress,
-  Grid,
+  IconButton,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material'
+import { useRef } from 'react'
 import { useLocalization } from '../../app/LocalizationContext'
 import type { TransactionDto } from './transactionTypes'
 import type { RegionCode } from './transactionTypes'
+import { regions } from './transactionTypes'
 
 type ApprovedTransactionCardsProps = {
   error: string | null
@@ -31,7 +36,15 @@ export function ApprovedTransactionCards({
   realtimeStatus,
   transactions,
 }: ApprovedTransactionCardsProps) {
-  const { locale, t } = useLocalization()
+  const { direction, locale, t } = useLocalization()
+  const listRef = useRef<HTMLDivElement | null>(null)
+
+  function scrollTransactions(visualDirection: 'left' | 'right') {
+    const directionMultiplier = direction === 'rtl' ? -1 : 1
+    const left = (visualDirection === 'left' ? -320 : 320) * directionMultiplier
+
+    listRef.current?.scrollBy({ behavior: 'smooth', left })
+  }
 
   return (
     <Box>
@@ -57,6 +70,30 @@ export function ApprovedTransactionCards({
           <Button onClick={onRefresh} startIcon={<RefreshIcon />} variant="outlined">
             {t('cards.refresh')}
           </Button>
+          <Stack direction="row" spacing={0.5}>
+            <Tooltip title={t('cards.previous')}>
+              <span>
+                <IconButton
+                  aria-label={t('cards.previous')}
+                  disabled={isLoading || transactions.length === 0}
+                  onClick={() => scrollTransactions('left')}
+                >
+                  <ChevronLeftIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title={t('cards.next')}>
+              <span>
+                <IconButton
+                  aria-label={t('cards.next')}
+                  disabled={isLoading || transactions.length === 0}
+                  onClick={() => scrollTransactions('right')}
+                >
+                  <ChevronRightIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Stack>
         </Stack>
       </Stack>
 
@@ -80,38 +117,66 @@ export function ApprovedTransactionCards({
           </CardContent>
         </Card>
       ) : (
-        <Grid container spacing={2}>
+        <Box
+          ref={listRef}
+          sx={{
+            display: 'flex',
+            gap: 2,
+            overflowX: 'auto',
+            pb: 1,
+            scrollBehavior: 'smooth',
+            scrollSnapType: 'x mandatory',
+            scrollbarWidth: 'thin',
+          }}
+        >
           {transactions.map((transaction) => (
-            <Grid key={transaction.id} size={{ xs: 12, sm: 6 }}>
-              <Card variant="outlined">
-                <CardContent>
-                  <Stack spacing={1.5}>
-                    <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between' }}>
-                      <Typography sx={{ fontWeight: 700 }}>{transaction.merchantName}</Typography>
-                      <Chip color="success" label={t('common.approved')} size="small" />
-                    </Stack>
+            <Card
+              key={transaction.id}
+              variant="outlined"
+              sx={{
+                flex: '0 0 auto',
+                minHeight: 164,
+                scrollSnapAlign: 'start',
+                width: { xs: '82vw', sm: 300, md: 320 },
+              }}
+            >
+              <CardContent sx={{ height: '100%' }}>
+                <Stack spacing={1.5} sx={{ height: '100%' }}>
+                  <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between' }}>
+                    <Chip color="success" label={t('common.approved')} size="small" />
                     <Typography color="text.secondary" variant="body2">
                       {shortId(transaction.id)}
                     </Typography>
-                    <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between' }}>
-                      <Typography>
-                        {transaction.currency} {formatAmount(transaction.amount, locale)}
-                      </Typography>
-                      <Typography color="text.secondary">
-                        {t(getRegionKey(transaction.region))} · {formatLocalTime(transaction.localSubmittedAt, locale, t)}
-                      </Typography>
-                    </Stack>
-                    {transaction.decisionReason && (
-                      <Typography color="text.secondary" variant="body2">
-                        {translateDecisionReason(transaction.decisionReason, t)}
-                      </Typography>
-                    )}
                   </Stack>
-                </CardContent>
-              </Card>
-            </Grid>
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Typography sx={{ fontWeight: 700 }} variant="h6">
+                      {t('cards.timeTitle').replace(
+                        '{time}',
+                        formatLocalTime(transaction.localSubmittedAt, locale, t),
+                      )}
+                    </Typography>
+                    <Typography color="text.secondary">
+                      {t('cards.timeZoneSubtitle').replace('{timeZone}', getRegionTimeZone(transaction.region))}
+                    </Typography>
+                  </Box>
+                  <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between' }}>
+                    <Typography color="text.secondary" variant="body2">
+                      {transaction.merchantName}
+                    </Typography>
+                    <Typography variant="body2">
+                      {transaction.currency} {formatAmount(transaction.amount, locale)}
+                    </Typography>
+                  </Stack>
+                  {transaction.decisionReason && (
+                    <Typography color="text.secondary" variant="body2">
+                      {translateDecisionReason(transaction.decisionReason, t)}
+                    </Typography>
+                  )}
+                </Stack>
+              </CardContent>
+            </Card>
           ))}
-        </Grid>
+        </Box>
       )}
     </Box>
   )
@@ -143,8 +208,8 @@ function formatLocalTime(
   }).format(new Date(localSubmittedAt))
 }
 
-function getRegionKey(region: RegionCode) {
-  return `region.${region}` as const
+function getRegionTimeZone(region: RegionCode) {
+  return regions.find((item) => item.code === region)?.timeZone ?? region
 }
 
 function translateDecisionReason(

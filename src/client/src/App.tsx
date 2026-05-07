@@ -8,14 +8,17 @@ import { createAppTheme } from './app/theme'
 import { LoginScreen } from './features/auth/LoginScreen'
 import type { AuthSession } from './features/auth/authTypes'
 import { TransactionDashboard } from './features/transactions/TransactionDashboard'
+import type { TransactionViewMode } from './features/transactions/transactionViewTypes'
 import { AppShell } from './shared/layout/AppShell'
 
 const authStorageKey = 'transactions-manager.auth'
 const languageStorageKey = 'transactions-manager.language'
+const viewModeStorageKey = 'transactions-manager.viewMode'
 
 function App() {
   const [authSession, setAuthSession] = useState<AuthSession | null>(readStoredSession)
   const [language, setLanguage] = useState<Language>(readStoredLanguage)
+  const [viewMode, setViewMode] = useState<TransactionViewMode>(readStoredViewMode)
   const direction = getTextDirection(language)
   const emotionCache = useMemo(() => createEmotionCache(direction), [direction])
   const theme = useMemo(() => createAppTheme(direction), [direction])
@@ -41,6 +44,11 @@ function App() {
     setLanguage(nextLanguage)
   }
 
+  function handleViewModeChange(nextViewMode: TransactionViewMode) {
+    window.localStorage.setItem(viewModeStorageKey, nextViewMode)
+    setViewMode(nextViewMode)
+  }
+
   return (
     <CacheProvider value={emotionCache}>
       <ThemeProvider theme={theme}>
@@ -51,10 +59,16 @@ function App() {
             language={language}
             onLanguageChange={handleLanguageChange}
             onLogoutClick={handleLogout}
+            onViewModeChange={handleViewModeChange}
+            viewMode={viewMode}
             username={authSession?.username}
           >
             {authSession ? (
-              <TransactionDashboard accessToken={authSession.accessToken} key={authSession.accessToken} />
+              <TransactionDashboard
+                accessToken={authSession.accessToken}
+                key={authSession.accessToken}
+                viewMode={viewMode}
+              />
             ) : (
               <LoginScreen onLogin={handleLogin} />
             )}
@@ -84,4 +98,8 @@ function readStoredSession() {
 
 function readStoredLanguage(): Language {
   return window.localStorage.getItem(languageStorageKey) === 'he' ? 'he' : 'en'
+}
+
+function readStoredViewMode(): TransactionViewMode {
+  return window.localStorage.getItem(viewModeStorageKey) === 'detailed' ? 'detailed' : 'focused'
 }

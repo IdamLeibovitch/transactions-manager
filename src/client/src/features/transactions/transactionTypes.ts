@@ -36,9 +36,13 @@ export type TransactionStatusChangedMessage = {
   processedAtUtc: string | null
 }
 
-export const regions: Array<{ code: RegionCode; translationKey: `region.${RegionCode}` }> = [
-  { code: 'IL', translationKey: 'region.IL' },
-  { code: 'US_EAST', translationKey: 'region.US_EAST' },
-  { code: 'UK', translationKey: 'region.UK' },
-  { code: 'EU_CENTRAL', translationKey: 'region.EU_CENTRAL' },
+export const regions: Array<{
+  code: RegionCode
+  timeZone: string
+  translationKey: `region.${RegionCode}`
+}> = [
+  { code: 'IL', timeZone: 'Asia/Jerusalem', translationKey: 'region.IL' },
+  { code: 'US_EAST', timeZone: 'America/New_York', translationKey: 'region.US_EAST' },
+  { code: 'UK', timeZone: 'Europe/London', translationKey: 'region.UK' },
+  { code: 'EU_CENTRAL', timeZone: 'Europe/Berlin', translationKey: 'region.EU_CENTRAL' },
 ]
