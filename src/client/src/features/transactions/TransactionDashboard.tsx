@@ -363,17 +363,32 @@ function FocusedMarketingPanel() {
         </Grid>
         <Grid size={{ lg: 5 }} sx={{ display: { xs: 'none', lg: 'block' } }}>
           <Box
-            alt=""
-            component="img"
-            src={marketingImages[imageIndex]}
             sx={{
-              display: 'block',
-              maxHeight: 280,
-              maxWidth: '100%',
-              objectFit: 'contain',
+              height: 280,
+              position: 'relative',
               width: '100%',
             }}
-          />
+          >
+            {marketingImages.map((image, index) => (
+              <Box
+                alt=""
+                component="img"
+                key={image}
+                src={image}
+                sx={{
+                  display: 'block',
+                  inset: 0,
+                  maxHeight: 280,
+                  maxWidth: '100%',
+                  objectFit: 'contain',
+                  opacity: index === imageIndex ? 1 : 0,
+                  position: 'absolute',
+                  transition: 'opacity 650ms ease-in-out',
+                  width: '100%',
+                }}
+              />
+            ))}
+          </Box>
         </Grid>
       </Grid>
     </Paper>
