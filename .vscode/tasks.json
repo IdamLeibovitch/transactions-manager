@@ -10,6 +10,46 @@
         "${workspaceFolder}/src/backend/TransactionsManager.sln"
       ],
       "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "local dev backend",
+      "type": "process",
+      "command": "docker",
+      "args": [
+        "compose",
+        "-f",
+        "docker-compose.yml",
+        "-f",
+        "docker-compose.dev.yml",
+        "up",
+        "-d",
+        "mssql",
+        "rabbitmq",
+        "gateway-api",
+        "transaction-processor",
+        "notification-service"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "client dev",
+      "type": "npm",
+      "script": "dev",
+      "path": "src/client",
+      "dependsOn": "local dev backend",
+      "dependsOrder": "sequence",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*",
+          "endsPattern": "Local:\\s+http://localhost:5173/"
+        }
+      }
     }
   ]
 }

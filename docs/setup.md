@@ -1,6 +1,6 @@
 # Setup
 
-This project is optimized for a local interview demo. The default setup runs the full stack with Docker Compose. You can still run only the infrastructure containers and debug the app services from the host when needed.
+This project is optimized for a local interview demo. The default setup runs the full stack with Docker Compose. For frontend development, run Vite on the host and the backend services in Docker with the development override.
 
 ## Prerequisites
 
@@ -31,7 +31,7 @@ The checked-in `.env.example` contains development-only credentials:
 
 Do not reuse these secrets outside local development.
 
-## Start Infrastructure
+## Full Containerized Run
 
 Run the full stack:
 
@@ -43,52 +43,22 @@ Open `http://localhost:5173`.
 
 The client container serves the built React app with Nginx. Nginx proxies `/api` to `gateway-api` and `/ws` to `notification-service`, so the browser uses a single origin.
 
-For backend debugging, start only MSSQL and RabbitMQ:
+Client source changes do not hot reload in this mode. Rebuild the client image after changes:
 
 ```bash
-docker compose up -d mssql rabbitmq
+docker compose build client
+docker compose up -d client
 ```
 
-Useful checks:
+## Local Client Development
+
+Run backend containers with host ports for the gateway and notification service:
 
 ```bash
-docker compose ps
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d mssql rabbitmq gateway-api transaction-processor notification-service
 ```
 
-## Start Backend Services
-
-Only use these commands when you are running the app services from the host instead of using the full Compose stack. Run each command in a separate terminal:
-
-```bash
-dotnet run --project src/backend/GatewayApi/TransactionsManager.GatewayApi.csproj
-```
-
-```bash
-dotnet run --project src/backend/TransactionProcessor/TransactionsManager.TransactionProcessor.csproj
-```
-
-```bash
-dotnet run --project src/backend/NotificationService/TransactionsManager.NotificationService.csproj
-```
-
-The gateway applies EF Core migrations on startup, so a separate migration command is not required for normal local setup.
-
-Service health checks:
-
-```bash
-curl http://localhost:5080/health
-curl http://localhost:5081/health
-```
-
-When the full Compose stack is running, the gateway is exposed through the client proxy:
-
-```bash
-curl http://localhost:5173/api/service-info
-```
-
-## Start Frontend
-
-Only use these commands when you are running the frontend from the host instead of using the full Compose stack:
+Run Vite on the host:
 
 ```bash
 cd src/client
@@ -98,6 +68,14 @@ npm run dev
 
 Open `http://localhost:5173`.
 
+Useful checks:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml ps
+curl http://localhost:5080/health
+curl http://localhost:5081/health
+```
+
 The client reads these optional environment variables:
 
 | Variable | Default |
@@ -106,6 +84,34 @@ The client reads these optional environment variables:
 | `VITE_SIGNALR_URL` | `http://localhost:5081/ws/transactions` |
 
 The Dockerized client is built with `VITE_API_BASE_URL` empty and `VITE_SIGNALR_URL=/ws/transactions`, so requests go through the Nginx proxy.
+
+## VS Code
+
+The repository includes a `Client` launch configuration. It starts the backend containers with the development override, starts Vite, and opens `http://localhost:5173`.
+
+When the full Compose stack is running, the gateway is exposed through the client proxy:
+
+```bash
+curl http://localhost:5173/api/service-info
+```
+
+## Host Backend Debugging
+
+Use these commands when you are running the .NET services from the host instead of Docker. Start only MSSQL and RabbitMQ first:
+
+```bash
+docker compose up -d mssql rabbitmq
+```
+
+Then run each service in a separate terminal:
+
+```bash
+dotnet run --project src/backend/GatewayApi/TransactionsManager.GatewayApi.csproj
+dotnet run --project src/backend/TransactionProcessor/TransactionsManager.TransactionProcessor.csproj
+dotnet run --project src/backend/NotificationService/TransactionsManager.NotificationService.csproj
+```
+
+The gateway applies EF Core migrations on startup, so a separate migration command is not required for normal local setup.
 
 ## Ports
 

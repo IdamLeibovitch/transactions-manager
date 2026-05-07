@@ -2,6 +2,14 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Client",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "preLaunchTask": "client dev",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/src/client"
+    },
+    {
       "name": "Gateway API",
       "type": "coreclr",
       "request": "launch",

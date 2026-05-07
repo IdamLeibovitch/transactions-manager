@@ -30,7 +30,7 @@ This is a small monorepo with a microservice-inspired backend:
 
 See [docs/architecture.md](docs/architecture.md) for the full flow and service boundaries.
 
-## Quick start
+## Full Containerized Run
 
 Prerequisites:
 
@@ -44,7 +44,7 @@ Create local environment settings if you do not already have `.env`:
 cp .env.example .env
 ```
 
-Run the whole stack:
+Run the whole stack, including the production-built client:
 
 ```bash
 docker compose up --build
@@ -54,21 +54,27 @@ Open `http://localhost:5173`.
 
 The client is served from an Nginx container. Nginx proxies `/api` to `gateway-api` and `/ws` to `notification-service`, so the browser only needs the client URL.
 
-For backend debugging, you can still run only the infrastructure containers:
+## Local Development
+
+For frontend work, use Vite on the host so React changes hot reload immediately. Run the backend and infrastructure in Docker with the development override:
 
 ```bash
-docker compose up -d mssql rabbitmq
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d mssql rabbitmq gateway-api transaction-processor notification-service
 ```
 
-Then run the backend services from the host in separate terminals:
+Then run the client from the host:
 
 ```bash
-dotnet run --project src/backend/GatewayApi/TransactionsManager.GatewayApi.csproj
-dotnet run --project src/backend/TransactionProcessor/TransactionsManager.TransactionProcessor.csproj
-dotnet run --project src/backend/NotificationService/TransactionsManager.NotificationService.csproj
+cd src/client
+npm install
+npm run dev
 ```
 
-The gateway applies EF Core migrations on startup.
+Open `http://localhost:5173`.
+
+The development override publishes `gateway-api` on `5080` and `notification-service` on `5081`, matching the Vite defaults in `.env.example`.
+
+VS Code also has a `Client` launch configuration that starts the development backend containers, starts Vite, and opens `http://localhost:5173`.
 
 Development login:
 
@@ -108,6 +114,7 @@ After a frontend build, `src/client/dist` is generated output and should not be 
 ## More docs
 
 - [docs/setup.md](docs/setup.md)
+- [docs/local-development.md](docs/local-development.md)
 - [docs/architecture.md](docs/architecture.md)
 - [docs/api-contracts.md](docs/api-contracts.md)
 - [docs/events.md](docs/events.md)

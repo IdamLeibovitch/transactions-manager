@@ -1,0 +1,8 @@
+services:
+  gateway-api:
+    ports:
+      - "${GATEWAY_API_PORT:-5080}:8080"
+
+  notification-service:
+    ports:
+      - "${NOTIFICATION_SERVICE_PORT:-5081}:8080"
