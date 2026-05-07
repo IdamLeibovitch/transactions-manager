@@ -1,8 +1,6 @@
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { IconButton, Tooltip } from '@mui/material'
-import { useLocalization } from '../../app/LocalizationContext'
-import type { TextDirection } from '../../app/localization'
 import type { TransactionNavigationAction } from './utils/transactionListNavigation'
 
 type TransactionNavigationButtonProps = {
@@ -20,8 +18,7 @@ export function TransactionNavigationButton({
   placement = 'inline',
   title,
 }: TransactionNavigationButtonProps) {
-  const { direction } = useLocalization()
-  const pointsLeft = shouldPointLeft(action, direction)
+  const pointsLeft = action === 'previous'
 
   return (
     <Tooltip title={title}>
@@ -37,14 +34,6 @@ export function TransactionNavigationButton({
       </span>
     </Tooltip>
   )
-}
-
-function shouldPointLeft(action: TransactionNavigationAction, direction: TextDirection) {
-  if (action === 'previous') {
-    return direction !== 'rtl'
-  }
-
-  return direction === 'rtl'
 }
 
 function getSideButtonStyles(action: TransactionNavigationAction) {
