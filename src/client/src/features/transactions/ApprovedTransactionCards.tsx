@@ -25,6 +25,7 @@ type ApprovedTransactionCardsProps = {
   error: string | null
   isLoading: boolean
   onRefresh: () => void
+  showRefresh?: boolean
   transactions: TransactionDto[]
 }
 
@@ -32,6 +33,7 @@ export function ApprovedTransactionCards({
   error,
   isLoading,
   onRefresh,
+  showRefresh = true,
   transactions,
 }: ApprovedTransactionCardsProps) {
   const { direction, locale, t } = useLocalization()
@@ -60,9 +62,11 @@ export function ApprovedTransactionCards({
             icon={<CheckCircleIcon />}
             label={t('cards.approvedCount').replace('{count}', String(transactions.length))}
           />
-          <Button onClick={onRefresh} startIcon={<RefreshIcon />} variant="outlined">
-            {t('cards.refresh')}
-          </Button>
+          {showRefresh && (
+            <Button onClick={onRefresh} startIcon={<RefreshIcon />} variant="outlined">
+              {t('cards.refresh')}
+            </Button>
+          )}
           <Stack direction="row" spacing={0.5}>
             <Tooltip title={t('cards.previous')}>
               <span>

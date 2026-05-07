@@ -45,6 +45,7 @@ export function TransactionDashboard({ accessToken, viewMode }: TransactionDashb
   const [isLoadingApproved, setIsLoadingApproved] = useState(Boolean(accessToken))
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [approvedError, setApprovedError] = useState<string | null>(null)
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false)
   const [submitMessage, setSubmitMessage] = useState<string | null>(null)
 
   const loadApprovedTransactions = useCallback(async () => {
@@ -69,6 +70,7 @@ export function TransactionDashboard({ accessToken, viewMode }: TransactionDashb
 
   const handleStatusChanged = useCallback(async (message: TransactionStatusChangedMessage) => {
     if (!accessToken) {
+      setIsRealtimeConnected(false)
       return
     }
 
@@ -140,9 +142,21 @@ export function TransactionDashboard({ accessToken, viewMode }: TransactionDashb
 
     const connection = createTransactionsHubConnection({
       accessToken,
-      onClose: () => undefined,
-      onReconnected: () => undefined,
-      onReconnecting: () => undefined,
+      onClose: () => {
+        if (!disposed) {
+          setIsRealtimeConnected(false)
+        }
+      },
+      onReconnected: () => {
+        if (!disposed) {
+          setIsRealtimeConnected(true)
+        }
+      },
+      onReconnecting: () => {
+        if (!disposed) {
+          setIsRealtimeConnected(false)
+        }
+      },
       onStatusChanged: (message) => {
         void handleStatusChanged(message)
       },
@@ -153,8 +167,16 @@ export function TransactionDashboard({ accessToken, viewMode }: TransactionDashb
         try {
           await connection.start()
 
+          if (!disposed) {
+            setIsRealtimeConnected(true)
+          }
+
           return
         } catch {
+          if (!disposed) {
+            setIsRealtimeConnected(false)
+          }
+
           await delay(2000)
         }
       }
@@ -274,6 +296,7 @@ export function TransactionDashboard({ accessToken, viewMode }: TransactionDashb
         error={approvedError}
         isLoading={isLoadingApproved}
         onRefresh={loadApprovedTransactions}
+        showRefresh={!isRealtimeConnected}
         transactions={approvedTransactions}
       />
 
