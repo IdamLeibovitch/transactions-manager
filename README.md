@@ -2,63 +2,115 @@
 
 Take-home full-stack assignment for Shva.
 
-The app simulates transaction approval based on local banking hours. A transaction is approved only when the submitted instant maps to local time between `08:00` and `18:00` in the selected region.
+The app simulates transaction approval based on local banking hours. A submitted transaction is approved only when the submitted instant maps to local time between `08:00` and `18:00` in the selected region.
 
-## Scope
-
-Core requirements:
+## What is included
 
 - React, TypeScript, Vite frontend.
-- Material UI.
-- .NET/C# backend.
+- Material UI, responsive focused and detailed views.
+- English and Hebrew localization with RTL support.
+- Simple JWT authentication for local development.
+- .NET/C# backend services.
 - MSSQL persistence.
 - RabbitMQ event flow.
 - SignalR transaction status notifications.
-- Simple JWT authentication.
-- English and Hebrew localization.
-- Responsive UI based on the provided Figma layout.
+- Unit and e2e backend tests.
 
-Architecture style:
+## Architecture
 
-- One monorepo.
-- Small, locally runnable, microservice-inspired services.
-- RabbitMQ instead of Kafka for local development simplicity.
-- Simple auth built into the backend unless a separate auth service becomes clearly useful.
+This is a small monorepo with a microservice-inspired backend:
 
-## Services
+- `src/client`: React + Material UI frontend.
+- `src/backend/GatewayApi`: public REST API, validation, authentication, persistence, event publishing, and processed-event consumption.
+- `src/backend/TransactionProcessor`: worker service that evaluates the banking-hours approval rule.
+- `src/backend/NotificationService`: SignalR hub and processed-event consumer.
+- `src/backend/BuildingBlocks/Contracts`: shared API, event, auth, region, and transaction contracts.
+- `mssql`: SQL Server database, run through Docker Compose.
+- `rabbitmq`: message broker, run through Docker Compose.
 
-- `client`: React + Material UI frontend.
-- `gateway-api`: public REST API, validation, persistence, auth, event publishing, processed-event consumption.
-- `transaction-processor`: worker service that evaluates approval rules.
-- `notification-service`: SignalR hub and processed-event consumer.
-- `mssql`: transaction database.
-- `rabbitmq`: message broker.
+See [docs/architecture.md](docs/architecture.md) for the full flow and service boundaries.
 
-## Current State
+## Quick start
 
-This commit only initializes the monorepo structure and planning docs. No application code has been implemented yet.
+Prerequisites:
 
-## Planned Local Ports
+- Docker Desktop or another Docker Compose runtime.
+- .NET SDK `10`.
+- Node.js and npm.
 
-- Client: `5173`
-- Gateway API: `5080`
-- Notification service: `5081`
-- RabbitMQ Management: `15673`
-- RabbitMQ AMQP host port: `5673`
-- MSSQL: `1433`
+Create local environment settings:
 
-## Local Infrastructure
+```bash
+cp .env.example .env
+```
 
-Run MSSQL and RabbitMQ:
+Start MSSQL and RabbitMQ:
 
 ```bash
 docker compose up -d mssql rabbitmq
 ```
 
-See [docs/local-infrastructure.md](docs/local-infrastructure.md) for details.
-
-Run the gateway API:
+Run the backend services in separate terminals:
 
 ```bash
 dotnet run --project src/backend/GatewayApi/TransactionsManager.GatewayApi.csproj
+dotnet run --project src/backend/TransactionProcessor/TransactionsManager.TransactionProcessor.csproj
+dotnet run --project src/backend/NotificationService/TransactionsManager.NotificationService.csproj
 ```
+
+The gateway applies EF Core migrations on startup.
+
+Run the client:
+
+```bash
+cd src/client
+npm install
+npm run dev
+```
+
+Open the Vite URL, usually `http://localhost:5173`.
+
+Development login:
+
+- Username: `admin`
+- Password: `Pass123!`
+
+## Local URLs
+
+| Service | URL |
+| --- | --- |
+| Client | `http://localhost:5173` |
+| Gateway API | `http://localhost:5080` |
+| Notification SignalR hub | `http://localhost:5081/ws/transactions` |
+| Gateway health | `http://localhost:5080/health` |
+| Notification health | `http://localhost:5081/health` |
+| RabbitMQ Management | `http://localhost:15673` |
+
+RabbitMQ management uses `guest` / `guest` by default.
+
+## Verification
+
+Backend tests:
+
+```bash
+dotnet test src/backend/TransactionsManager.sln
+```
+
+Frontend checks:
+
+```bash
+cd src/client
+npm run lint
+npm run build
+```
+
+After a frontend build, `src/client/dist` is generated output and should not be committed.
+
+## More docs
+
+- [docs/setup.md](docs/setup.md)
+- [docs/architecture.md](docs/architecture.md)
+- [docs/api-contracts.md](docs/api-contracts.md)
+- [docs/events.md](docs/events.md)
+- [docs/time-zone-strategy.md](docs/time-zone-strategy.md)
+- [docs/local-infrastructure.md](docs/local-infrastructure.md)

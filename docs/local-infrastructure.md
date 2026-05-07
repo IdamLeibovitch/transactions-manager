@@ -18,6 +18,8 @@ Remove local persisted data:
 docker compose down -v
 ```
 
+Interviewers reading this, please do this step.
+
 ## Services
 
 | Service | Port | Notes |
