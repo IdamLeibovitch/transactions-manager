@@ -1,19 +1,20 @@
-import LoginIcon from '@mui/icons-material/Login'
+import AccountCircleIcon from '@mui/icons-material/AccountCircle'
 import LogoutIcon from '@mui/icons-material/Logout'
-import NotificationsIcon from '@mui/icons-material/Notifications'
-import TranslateIcon from '@mui/icons-material/Translate'
 import {
   AppBar,
   Box,
   Button,
   Container,
   IconButton,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
   Stack,
   Toolbar,
   Tooltip,
-  Typography,
 } from '@mui/material'
-import type { ReactNode } from 'react'
+import { useState, type MouseEvent, type ReactNode } from 'react'
 import { useLocalization } from '../../app/LocalizationContext'
 import type { Language } from '../../app/localization'
 
@@ -21,8 +22,7 @@ type AppShellProps = {
   children: ReactNode
   isAuthenticated: boolean
   language: Language
-  onLanguageToggle: () => void
-  onLoginClick: () => void
+  onLanguageChange: (language: Language) => void
   onLogoutClick: () => void
   username?: string
 }
@@ -31,12 +31,26 @@ export function AppShell({
   children,
   isAuthenticated,
   language,
-  onLanguageToggle,
-  onLoginClick,
+  onLanguageChange,
   onLogoutClick,
   username,
 }: AppShellProps) {
   const { t } = useLocalization()
+  const [accountAnchorEl, setAccountAnchorEl] = useState<HTMLElement | null>(null)
+  const isAccountMenuOpen = Boolean(accountAnchorEl)
+
+  function handleAccountClick(event: MouseEvent<HTMLElement>) {
+    setAccountAnchorEl(event.currentTarget)
+  }
+
+  function handleAccountClose() {
+    setAccountAnchorEl(null)
+  }
+
+  function handleLogout() {
+    handleAccountClose()
+    onLogoutClick()
+  }
 
   return (
     <Box sx={{ minHeight: '100svh', bgcolor: 'background.default' }}>
@@ -46,37 +60,67 @@ export function AppShell({
         position="sticky"
         sx={{ borderBottom: 1, borderColor: 'divider' }}
       >
-        <Toolbar sx={{ gap: 2 }}>
+        <Toolbar sx={{ gap: 2, minHeight: { xs: 64, sm: 72 } }}>
           <Box
             alt="Shva"
             component="img"
             src="/shva-logo.png"
             sx={{ display: 'block', height: { xs: 28, sm: 34 }, width: 'auto' }}
           />
-          <Typography
-            component="h1"
-            sx={{ flexGrow: 1, fontSize: { xs: 18, sm: 20 }, fontWeight: 700 }}
-          >
-            {t('app.title')}
-          </Typography>
-          <Stack direction="row" spacing={1}>
-            <Tooltip title={t('common.notifications')}>
-              <IconButton aria-label={t('common.notifications')}>
-                <NotificationsIcon />
-              </IconButton>
-            </Tooltip>
-            <Button onClick={onLanguageToggle} startIcon={<TranslateIcon />} variant="text">
-              {language === 'en' ? 'עברית' : 'English'}
-            </Button>
+          <Box sx={{ flexGrow: 1 }} />
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+            <Stack
+              aria-label={t('common.language')}
+              component="nav"
+              direction="row"
+              spacing={0.5}
+              sx={{ direction: 'ltr' }}
+            >
+              <Button
+                onClick={() => onLanguageChange('en')}
+                size="small"
+                variant={language === 'en' ? 'contained' : 'outlined'}
+              >
+                EN
+              </Button>
+              <Button
+                onClick={() => onLanguageChange('he')}
+                size="small"
+                variant={language === 'he' ? 'contained' : 'outlined'}
+              >
+                עברית
+              </Button>
+            </Stack>
             {isAuthenticated ? (
-              <Button onClick={onLogoutClick} startIcon={<LogoutIcon />} variant="outlined">
-                {username ?? t('auth.logout')}
-              </Button>
-            ) : (
-              <Button onClick={onLoginClick} startIcon={<LoginIcon />} variant="contained">
-                {t('auth.login')}
-              </Button>
-            )}
+              <>
+                <Tooltip title={username ?? t('auth.account')}>
+                  <IconButton
+                    aria-controls={isAccountMenuOpen ? 'account-menu' : undefined}
+                    aria-expanded={isAccountMenuOpen ? 'true' : undefined}
+                    aria-haspopup="true"
+                    aria-label={t('auth.account')}
+                    color="primary"
+                    onClick={handleAccountClick}
+                  >
+                    <AccountCircleIcon />
+                  </IconButton>
+                </Tooltip>
+                <Menu
+                  anchorEl={accountAnchorEl}
+                  id="account-menu"
+                  onClose={handleAccountClose}
+                  open={isAccountMenuOpen}
+                >
+                  <MenuItem disabled>{username}</MenuItem>
+                  <MenuItem onClick={handleLogout}>
+                    <ListItemIcon>
+                      <LogoutIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>{t('auth.logout')}</ListItemText>
+                  </MenuItem>
+                </Menu>
+              </>
+            ) : null}
           </Stack>
         </Toolbar>
       </AppBar>

@@ -5,7 +5,7 @@ import { createEmotionCache } from './app/createEmotionCache'
 import { LocalizationProvider } from './app/LocalizationProvider'
 import { getTextDirection, type Language } from './app/localization'
 import { createAppTheme } from './app/theme'
-import { LoginDialog } from './features/auth/LoginDialog'
+import { LoginScreen } from './features/auth/LoginScreen'
 import type { AuthSession } from './features/auth/authTypes'
 import { TransactionDashboard } from './features/transactions/TransactionDashboard'
 import { AppShell } from './shared/layout/AppShell'
@@ -16,7 +16,6 @@ const languageStorageKey = 'transactions-manager.language'
 function App() {
   const [authSession, setAuthSession] = useState<AuthSession | null>(readStoredSession)
   const [language, setLanguage] = useState<Language>(readStoredLanguage)
-  const [isLoginOpen, setIsLoginOpen] = useState(!authSession)
   const direction = getTextDirection(language)
   const emotionCache = useMemo(() => createEmotionCache(direction), [direction])
   const theme = useMemo(() => createAppTheme(direction), [direction])
@@ -35,11 +34,9 @@ function App() {
   function handleLogout() {
     window.localStorage.removeItem(authStorageKey)
     setAuthSession(null)
-    setIsLoginOpen(true)
   }
 
-  function handleLanguageToggle() {
-    const nextLanguage: Language = language === 'en' ? 'he' : 'en'
+  function handleLanguageChange(nextLanguage: Language) {
     window.localStorage.setItem(languageStorageKey, nextLanguage)
     setLanguage(nextLanguage)
   }
@@ -52,21 +49,16 @@ function App() {
           <AppShell
             isAuthenticated={Boolean(authSession)}
             language={language}
-            onLanguageToggle={handleLanguageToggle}
-            onLoginClick={() => setIsLoginOpen(true)}
+            onLanguageChange={handleLanguageChange}
             onLogoutClick={handleLogout}
             username={authSession?.username}
           >
-            <TransactionDashboard
-              accessToken={authSession?.accessToken ?? null}
-              key={authSession?.accessToken ?? 'anonymous'}
-            />
+            {authSession ? (
+              <TransactionDashboard accessToken={authSession.accessToken} key={authSession.accessToken} />
+            ) : (
+              <LoginScreen onLogin={handleLogin} />
+            )}
           </AppShell>
-          <LoginDialog
-            onClose={() => setIsLoginOpen(false)}
-            onLogin={handleLogin}
-            open={isLoginOpen}
-          />
         </LocalizationProvider>
       </ThemeProvider>
     </CacheProvider>
