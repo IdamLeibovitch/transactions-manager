@@ -384,7 +384,7 @@ function FocusedMarketingPanel() {
                 component="h1"
                 sx={{
                   color: 'primary.main',
-                  fontSize: { xs: 32, md: 44 },
+                  fontSize: { xs: 28, md: 38 },
                   fontWeight: 800,
                   lineHeight: 1.12,
                 }}
