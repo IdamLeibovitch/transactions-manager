@@ -1,5 +1,3 @@
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import {
@@ -10,16 +8,16 @@ import {
   CardContent,
   Chip,
   CircularProgress,
-  IconButton,
   Stack,
-  Tooltip,
   Typography,
 } from '@mui/material'
 import { useRef } from 'react'
 import { useLocalization } from '../../app/LocalizationContext'
+import { TransactionNavigationButton } from './TransactionNavigationButton'
 import type { TransactionDto } from './transactionTypes'
 import type { RegionCode } from './transactionTypes'
 import { regions } from './transactionTypes'
+import { scrollTransactionList, type TransactionNavigationAction } from './utils/transactionListNavigation'
 
 type ApprovedTransactionCardsProps = {
   error: string | null
@@ -39,11 +37,14 @@ export function ApprovedTransactionCards({
   const { direction, locale, t } = useLocalization()
   const listRef = useRef<HTMLDivElement | null>(null)
 
-  function scrollTransactions(visualDirection: 'left' | 'right') {
-    const directionMultiplier = direction === 'rtl' ? -1 : 1
-    const left = (visualDirection === 'left' ? -320 : 320) * directionMultiplier
+  function scrollTransactions(action: TransactionNavigationAction) {
+    const list = listRef.current
 
-    listRef.current?.scrollBy({ behavior: 'smooth', left })
+    if (!list) {
+      return
+    }
+
+    scrollTransactionList(list, '[data-transaction-card]', action)
   }
 
   return (
@@ -68,28 +69,18 @@ export function ApprovedTransactionCards({
             </Button>
           )}
           <Stack direction="row" spacing={0.5}>
-            <Tooltip title={t('cards.previous')}>
-              <span>
-                <IconButton
-                  aria-label={t('cards.previous')}
-                  disabled={isLoading || transactions.length === 0}
-                  onClick={() => scrollTransactions('left')}
-                >
-                  <ChevronLeftIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title={t('cards.next')}>
-              <span>
-                <IconButton
-                  aria-label={t('cards.next')}
-                  disabled={isLoading || transactions.length === 0}
-                  onClick={() => scrollTransactions('right')}
-                >
-                  <ChevronRightIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
+            <TransactionNavigationButton
+              action="previous"
+              disabled={isLoading || transactions.length === 0}
+              onClick={() => scrollTransactions('previous')}
+              title={t('cards.previous')}
+            />
+            <TransactionNavigationButton
+              action="next"
+              disabled={isLoading || transactions.length === 0}
+              onClick={() => scrollTransactions('next')}
+              title={t('cards.next')}
+            />
           </Stack>
         </Stack>
       </Stack>
@@ -117,6 +108,7 @@ export function ApprovedTransactionCards({
         <Box
           ref={listRef}
           sx={{
+            direction,
             display: 'flex',
             gap: 2,
             overflowX: 'auto',
@@ -128,6 +120,7 @@ export function ApprovedTransactionCards({
         >
           {transactions.map((transaction) => (
             <Card
+              data-transaction-card
               key={transaction.id}
               variant="outlined"
               sx={{

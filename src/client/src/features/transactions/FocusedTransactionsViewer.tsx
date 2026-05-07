@@ -1,5 +1,3 @@
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { keyframes } from '@emotion/react'
 import {
   Alert,
@@ -7,17 +5,17 @@ import {
   Card,
   CardContent,
   CircularProgress,
-  IconButton,
   Stack,
-  Tooltip,
   Typography,
   useMediaQuery,
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
-import { useMemo, useRef, type ReactNode } from 'react'
+import { useMemo, useRef } from 'react'
 import { useLocalization } from '../../app/LocalizationContext'
+import { TransactionNavigationButton } from './TransactionNavigationButton'
 import type { RegionCode, TransactionDto } from './transactionTypes'
 import { regions } from './transactionTypes'
+import { scrollTransactionList, type TransactionNavigationAction } from './utils/transactionListNavigation'
 
 type FocusedTransactionsViewerProps = {
   error: string | null
@@ -25,7 +23,6 @@ type FocusedTransactionsViewerProps = {
   transactions: TransactionDto[]
 }
 
-const fullVisibilityTolerance = 2
 const focusedTransactionEnter = keyframes`
   from {
     opacity: 0;
@@ -52,37 +49,14 @@ export function FocusedTransactionsViewer({
     [transactions],
   )
 
-  function scrollTransactions(visualDirection: 'left' | 'right') {
+  function scrollTransactions(action: TransactionNavigationAction) {
     const list = listRef.current
 
     if (!list) {
       return
     }
 
-    const cards = Array.from(list.querySelectorAll<HTMLElement>('[data-focused-transaction-card]'))
-
-    if (cards.length === 0) {
-      return
-    }
-
-    const listRect = list.getBoundingClientRect()
-    const cardRects = cards.map((card) => card.getBoundingClientRect())
-    const fullyVisibleIndexes = cardRects
-      .map((rect, index) => ({ index, rect }))
-      .filter(({ rect }) =>
-        rect.left >= listRect.left - fullVisibilityTolerance &&
-        rect.right <= listRect.right + fullVisibilityTolerance,
-      )
-      .map(({ index }) => index)
-    const visibleCount = Math.max(1, fullyVisibleIndexes.length)
-    const firstFullyVisibleIndex = fullyVisibleIndexes[0] ?? 0
-    const lastFullyVisibleIndex = fullyVisibleIndexes.at(-1) ?? 0
-
-    const targetIndex = visualDirection === 'right'
-      ? findNextCardIndex(cardRects, listRect, lastFullyVisibleIndex)
-      : findPreviousCardIndex(cardRects, listRect, firstFullyVisibleIndex, visibleCount)
-
-    scrollCardIntoView(list, cards[targetIndex])
+    scrollTransactionList(list, '[data-focused-transaction-card]', action)
   }
 
   return (
@@ -110,21 +84,19 @@ export function FocusedTransactionsViewer({
       ) : (
         <Box sx={{ position: 'relative' }}>
           {showSideButtons && (
-            <SideScrollButton
-              ariaLabel={t('cards.previous')}
+            <TransactionNavigationButton
+              action="previous"
               disabled={approvedTransactions.length === 0}
-              edge="left"
-              onClick={() => scrollTransactions('left')}
+              onClick={() => scrollTransactions('previous')}
+              placement="side"
               title={t('cards.previous')}
-            >
-              <ChevronLeftIcon />
-            </SideScrollButton>
+            />
           )}
 
           <Box
             ref={listRef}
             sx={{
-              direction: 'ltr',
+              direction,
               display: 'flex',
               gap: 2,
               overflowX: 'auto',
@@ -164,109 +136,18 @@ export function FocusedTransactionsViewer({
           </Box>
 
           {showSideButtons && (
-            <SideScrollButton
-              ariaLabel={t('cards.next')}
+            <TransactionNavigationButton
+              action="next"
               disabled={approvedTransactions.length === 0}
-              edge="right"
-              onClick={() => scrollTransactions('right')}
+              onClick={() => scrollTransactions('next')}
+              placement="side"
               title={t('cards.next')}
-            >
-              <ChevronRightIcon />
-            </SideScrollButton>
+            />
           )}
         </Box>
       )}
     </Box>
   )
-}
-
-function SideScrollButton({
-  ariaLabel,
-  children,
-  disabled,
-  edge,
-  onClick,
-  title,
-}: {
-  ariaLabel: string
-  children: ReactNode
-  disabled: boolean
-  edge: 'left' | 'right'
-  onClick: () => void
-  title: string
-}) {
-  return (
-    <Tooltip title={title}>
-      <span>
-        <IconButton
-          aria-label={ariaLabel}
-          disabled={disabled}
-          onClick={onClick}
-          sx={{
-            bgcolor: 'background.paper',
-            border: 1,
-            borderColor: 'divider',
-            boxShadow: 2,
-            position: 'absolute',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            zIndex: 1,
-            ...(edge === 'left' ? { left: -22 } : { right: -22 }),
-            '&:hover': {
-              bgcolor: 'background.paper',
-            },
-          }}
-        >
-          {children}
-        </IconButton>
-      </span>
-    </Tooltip>
-  )
-}
-
-function findNextCardIndex(
-  cardRects: DOMRect[],
-  listRect: DOMRect,
-  lastFullyVisibleIndex: number,
-) {
-  const partialAfterIndex = cardRects.findIndex((rect) =>
-    rect.left < listRect.right - fullVisibilityTolerance &&
-    rect.right > listRect.right + fullVisibilityTolerance,
-  )
-
-  if (partialAfterIndex >= 0) {
-    return partialAfterIndex
-  }
-
-  return Math.min(cardRects.length - 1, lastFullyVisibleIndex + 1)
-}
-
-function findPreviousCardIndex(
-  cardRects: DOMRect[],
-  listRect: DOMRect,
-  firstFullyVisibleIndex: number,
-  visibleCount: number,
-) {
-  const partialBeforeIndex = cardRects.findLastIndex((rect) =>
-    rect.left < listRect.left - fullVisibilityTolerance &&
-    rect.right > listRect.left + fullVisibilityTolerance,
-  )
-
-  if (partialBeforeIndex >= 0) {
-    return partialBeforeIndex
-  }
-
-  return Math.max(0, firstFullyVisibleIndex - visibleCount)
-}
-
-function scrollCardIntoView(list: HTMLDivElement, card: HTMLElement) {
-  const listRect = list.getBoundingClientRect()
-  const cardRect = card.getBoundingClientRect()
-
-  list.scrollTo({
-    behavior: 'smooth',
-    left: list.scrollLeft + cardRect.left - listRect.left,
-  })
 }
 
 function formatLocalTime(
