@@ -25,7 +25,6 @@ type ApprovedTransactionCardsProps = {
   error: string | null
   isLoading: boolean
   onRefresh: () => void
-  realtimeStatus: 'connected' | 'connecting' | 'disconnected'
   transactions: TransactionDto[]
 }
 
@@ -33,7 +32,6 @@ export function ApprovedTransactionCards({
   error,
   isLoading,
   onRefresh,
-  realtimeStatus,
   transactions,
 }: ApprovedTransactionCardsProps) {
   const { direction, locale, t } = useLocalization()
@@ -57,11 +55,6 @@ export function ApprovedTransactionCards({
           {t('cards.approvedTransactions')}
         </Typography>
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-          <Chip
-            color={realtimeStatus === 'connected' ? 'success' : realtimeStatus === 'connecting' ? 'warning' : 'default'}
-            label={t(`cards.realtime.${realtimeStatus}`)}
-            variant={realtimeStatus === 'connected' ? 'filled' : 'outlined'}
-          />
           <Chip
             color="success"
             icon={<CheckCircleIcon />}

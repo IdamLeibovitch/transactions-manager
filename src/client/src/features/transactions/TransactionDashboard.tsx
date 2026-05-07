@@ -15,6 +15,7 @@ import { useLocalization } from '../../app/LocalizationContext'
 import { interpolate } from '../../app/localization'
 import { ApprovedTransactionCards } from './ApprovedTransactionCards'
 import { FocusedTransactionForm } from './FocusedTransactionForm'
+import { FocusedTransactionsViewer } from './FocusedTransactionsViewer'
 import { TransactionForm } from './TransactionForm'
 import type {
   CreateTransactionRequest,
@@ -24,8 +25,6 @@ import type {
 import type { TransactionViewMode } from './transactionViewTypes'
 import { createTransaction, getTransaction, listTransactions } from './transactionsApi'
 import { createTransactionsHubConnection } from './transactionsHub'
-
-type RealtimeStatus = 'connected' | 'connecting' | 'disconnected'
 
 type TransactionDashboardProps = {
   accessToken: string | null
@@ -46,9 +45,6 @@ export function TransactionDashboard({ accessToken, viewMode }: TransactionDashb
   const [isLoadingApproved, setIsLoadingApproved] = useState(Boolean(accessToken))
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [approvedError, setApprovedError] = useState<string | null>(null)
-  const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>(
-    accessToken ? 'connecting' : 'disconnected',
-  )
   const [submitMessage, setSubmitMessage] = useState<string | null>(null)
 
   const loadApprovedTransactions = useCallback(async () => {
@@ -144,21 +140,9 @@ export function TransactionDashboard({ accessToken, viewMode }: TransactionDashb
 
     const connection = createTransactionsHubConnection({
       accessToken,
-      onClose: () => {
-        if (!disposed) {
-          setRealtimeStatus('disconnected')
-        }
-      },
-      onReconnected: () => {
-        if (!disposed) {
-          setRealtimeStatus('connected')
-        }
-      },
-      onReconnecting: () => {
-        if (!disposed) {
-          setRealtimeStatus('connecting')
-        }
-      },
+      onClose: () => undefined,
+      onReconnected: () => undefined,
+      onReconnecting: () => undefined,
       onStatusChanged: (message) => {
         void handleStatusChanged(message)
       },
@@ -167,19 +151,10 @@ export function TransactionDashboard({ accessToken, viewMode }: TransactionDashb
     async function startConnection() {
       while (!disposed) {
         try {
-          setRealtimeStatus('connecting')
           await connection.start()
-
-          if (!disposed) {
-            setRealtimeStatus('connected')
-          }
 
           return
         } catch {
-          if (!disposed) {
-            setRealtimeStatus('disconnected')
-          }
-
           await delay(2000)
         }
       }
@@ -227,11 +202,9 @@ export function TransactionDashboard({ accessToken, viewMode }: TransactionDashb
         </Grid>
       </Grid>
 
-      <ApprovedTransactionCards
+      <FocusedTransactionsViewer
         error={approvedError}
         isLoading={isLoadingApproved}
-        onRefresh={loadApprovedTransactions}
-        realtimeStatus={realtimeStatus}
         transactions={approvedTransactions}
       />
 
@@ -301,7 +274,6 @@ export function TransactionDashboard({ accessToken, viewMode }: TransactionDashb
         error={approvedError}
         isLoading={isLoadingApproved}
         onRefresh={loadApprovedTransactions}
-        realtimeStatus={realtimeStatus}
         transactions={approvedTransactions}
       />
 
