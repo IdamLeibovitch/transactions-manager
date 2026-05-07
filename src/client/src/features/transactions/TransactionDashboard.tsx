@@ -339,93 +339,95 @@ function FocusedMarketingPanel() {
         p: { xs: 1, md: 2 },
       }}
     >
-      <Grid container spacing={3} sx={{ alignItems: 'center', height: '100%' }}>
-        <Grid size={{ xs: 12, lg: 7 }}>
-          <Stack spacing={3}>
-            <Stack spacing={2} sx={{ alignItems: 'center', textAlign: 'center' }}>
-              <Box
-                sx={{
-                  bgcolor: '#ffffff',
-                  border: 1,
-                  borderColor: '#d8d8d8',
-                  borderRadius: 2,
-                  boxShadow: '0 2px 0 rgba(0, 0, 0, 0.22)',
-                  px: { xs: 2.5, sm: 4 },
-                  py: 0.75,
-                }}
-              >
-                <Typography
-                  sx={{
-                    color: '#3d3d3f',
-                    fontSize: { xs: 20, sm: 32 },
-                    fontWeight: 800,
-                    lineHeight: 1.25,
-                    textTransform: 'uppercase',
-                  }}
-                  variant="h2"
-                >
-                  TRANSACTION SIMULATOR
-                </Typography>
-              </Box>
-              <Typography
-                sx={{
-                  color: '#3a3a3d',
-                  fontSize: { xs: 26, sm: 44 },
-                  fontWeight: 800,
-                  lineHeight: 1.2,
-                }}
-                variant="h2"
-              >
-                Will this transaction be approved?
-              </Typography>
-            </Stack>
-            <Typography
-              component="h1"
-              sx={{
-                color: 'primary.main',
-                fontSize: { xs: 32, md: 44 },
-                fontWeight: 800,
-                lineHeight: 1.12,
-              }}
-              variant="h1"
-            >
-              {t('marketing.title')}
-            </Typography>
-            <Typography color="text.secondary" sx={{ fontSize: { xs: 16, md: 18 }, lineHeight: 1.8 }}>
-              {t('marketing.subtitle')}
-            </Typography>
-          </Stack>
-        </Grid>
-        <Grid size={{ lg: 5 }} sx={{ display: { xs: 'none', lg: 'block' } }}>
+      <Stack spacing={3} sx={{ height: '100%' }}>
+        <Stack spacing={1.25} sx={{ alignItems: 'center', textAlign: 'center' }}>
           <Box
             sx={{
-              height: 280,
-              position: 'relative',
-              width: '100%',
+              bgcolor: '#ffffff',
+              border: 1,
+              borderColor: '#d8d8d8',
+              borderRadius: 1.5,
+              boxShadow: '0 2px 0 rgba(0, 0, 0, 0.22)',
+              px: { xs: 2, sm: 3 },
+              py: 0.5,
             }}
           >
-            {marketingImages.map((image, index) => (
-              <Box
-                alt=""
-                component="img"
-                key={image}
-                src={image}
-                sx={{
-                  display: 'block',
-                  inset: 0,
-                  maxHeight: 280,
-                  maxWidth: '100%',
-                  objectFit: 'contain',
-                  opacity: index === imageIndex ? 1 : 0,
-                  position: 'absolute',
-                  transition: 'opacity 650ms ease-in-out',
-                  width: '100%',
-                }}
-              />
-            ))}
+            <Typography
+              sx={{
+                color: '#3d3d3f',
+                fontSize: { xs: '0.9rem', sm: '1rem' },
+                fontWeight: 800,
+                lineHeight: 1.2,
+                textTransform: 'uppercase',
+              }}
+              variant="h2"
+            >
+              {t('simulator.title')}
+            </Typography>
           </Box>
+          <Typography
+            sx={{
+              color: '#3a3a3d',
+              fontSize: { xs: '1rem', sm: '1.15rem' },
+              fontWeight: 800,
+              lineHeight: 1.3,
+            }}
+            variant="h2"
+          >
+            {t('simulator.question')}
+          </Typography>
+        </Stack>
+        <Grid container spacing={3} sx={{ alignItems: 'center', flexGrow: 1 }}>
+          <Grid size={{ xs: 12, lg: 7 }}>
+            <Stack spacing={2}>
+              <Typography
+                component="h1"
+                sx={{
+                  color: 'primary.main',
+                  fontSize: { xs: 32, md: 44 },
+                  fontWeight: 800,
+                  lineHeight: 1.12,
+                }}
+                variant="h1"
+              >
+                {t('marketing.title')}
+              </Typography>
+              <Typography color="text.secondary" sx={{ fontSize: { xs: 16, md: 18 }, lineHeight: 1.8 }}>
+                {t('marketing.subtitle')}
+              </Typography>
+            </Stack>
+          </Grid>
+          <Grid size={{ lg: 5 }} sx={{ display: { xs: 'none', lg: 'block' } }}>
+            <Box
+              sx={{
+                height: 280,
+                position: 'relative',
+                width: '100%',
+              }}
+            >
+              {marketingImages.map((image, index) => (
+                <Box
+                  alt=""
+                  component="img"
+                  key={image}
+                  src={image}
+                  sx={{
+                    display: 'block',
+                    inset: 0,
+                    maxHeight: 280,
+                    maxWidth: '100%',
+                    objectFit: 'contain',
+                    opacity: index === imageIndex ? 1 : 0,
+                    position: 'absolute',
+                    transition: 'opacity 650ms ease-in-out',
+                    width: '100%',
+                  }}
+                />
+              ))}
+            </Box>
+          </Grid>
         </Grid>
-      </Grid>
+      </Stack>
     </Paper>
   )
 }
