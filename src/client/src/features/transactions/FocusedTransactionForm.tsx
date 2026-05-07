@@ -199,62 +199,63 @@ export function FocusedTransactionForm({
                 p: { xs: 2.5, sm: 3 },
               }}
             >
-              <Typography color="text.secondary" id={timeGroupLabelId} sx={{ fontWeight: 700 }}>
-                {t('form.enterTime')}
-              </Typography>
-
               {timeEntryMode === 'text' ? (
-                <Stack
-                  aria-describedby={timeDescriptionIds}
-                  aria-labelledby={timeGroupLabelId}
-                  direction="row"
-                  role="group"
-                  spacing={{ xs: 1.5, sm: 2 }}
-                  sx={{ alignItems: 'flex-start' }}
-                >
-                  <TimePartInput
-                    ariaLabel={t('form.hour')}
-                    describedBy={timeDescriptionIds}
-                    disabled={isDisabled || isSubmitting}
-                    error={submitted && !isValidHour(submittedTime.hour)}
-                    inputRef={hourInputRef}
-                    label={t('form.hour')}
-                    max={23}
-                    onChange={(value) => handleTimePartChange('hour', value)}
-                    onMax={() => handleTimePartBoundary('hour', 'max')}
-                    onMin={() => handleTimePartBoundary('hour', 'min')}
-                    onMoveNext={() => minuteInputRef.current?.focus()}
-                    onNormalize={() => handleTimePartBlur('hour')}
-                    onStep={(step) => handleTimePartStep('hour', step)}
-                    value={submittedTime.hour}
-                  />
-                  <Typography
-                    sx={{
-                      color: 'text.primary',
-                      fontSize: { xs: 48, sm: 64 },
-                      fontWeight: 700,
-                      lineHeight: 1.05,
-                      pt: 1.5,
-                    }}
-                  >
-                    :
+                <Stack spacing={2.5}>
+                  <Typography color="text.secondary" id={timeGroupLabelId} sx={{ fontWeight: 700 }}>
+                    {t('form.enterTime')}
                   </Typography>
-                  <TimePartInput
-                    ariaLabel={t('form.minute')}
-                    describedBy={timeDescriptionIds}
-                    disabled={isDisabled || isSubmitting}
-                    error={submitted && !isValidMinute(submittedTime.minute)}
-                    inputRef={minuteInputRef}
-                    label={t('form.minute')}
-                    max={59}
-                    onChange={(value) => handleTimePartChange('minute', value)}
-                    onMax={() => handleTimePartBoundary('minute', 'max')}
-                    onMin={() => handleTimePartBoundary('minute', 'min')}
-                    onMovePrevious={() => hourInputRef.current?.focus()}
-                    onNormalize={() => handleTimePartBlur('minute')}
-                    onStep={(step) => handleTimePartStep('minute', step)}
-                    value={submittedTime.minute}
-                  />
+                  <Stack
+                    aria-describedby={timeDescriptionIds}
+                    aria-labelledby={timeGroupLabelId}
+                    direction="row"
+                    role="group"
+                    spacing={{ xs: 1.5, sm: 2 }}
+                    sx={{ alignItems: 'flex-start' }}
+                  >
+                    <TimePartInput
+                      ariaLabel={t('form.hour')}
+                      describedBy={timeDescriptionIds}
+                      disabled={isDisabled || isSubmitting}
+                      error={submitted && !isValidHour(submittedTime.hour)}
+                      inputRef={hourInputRef}
+                      label={t('form.hour')}
+                      max={23}
+                      onChange={(value) => handleTimePartChange('hour', value)}
+                      onMax={() => handleTimePartBoundary('hour', 'max')}
+                      onMin={() => handleTimePartBoundary('hour', 'min')}
+                      onMoveNext={() => minuteInputRef.current?.focus()}
+                      onNormalize={() => handleTimePartBlur('hour')}
+                      onStep={(step) => handleTimePartStep('hour', step)}
+                      value={submittedTime.hour}
+                    />
+                    <Typography
+                      sx={{
+                        color: 'text.primary',
+                        fontSize: { xs: 48, sm: 64 },
+                        fontWeight: 700,
+                        lineHeight: 1.05,
+                        pt: 1.5,
+                      }}
+                    >
+                      :
+                    </Typography>
+                    <TimePartInput
+                      ariaLabel={t('form.minute')}
+                      describedBy={timeDescriptionIds}
+                      disabled={isDisabled || isSubmitting}
+                      error={submitted && !isValidMinute(submittedTime.minute)}
+                      inputRef={minuteInputRef}
+                      label={t('form.minute')}
+                      max={59}
+                      onChange={(value) => handleTimePartChange('minute', value)}
+                      onMax={() => handleTimePartBoundary('minute', 'max')}
+                      onMin={() => handleTimePartBoundary('minute', 'min')}
+                      onMovePrevious={() => hourInputRef.current?.focus()}
+                      onNormalize={() => handleTimePartBlur('minute')}
+                      onStep={(step) => handleTimePartStep('minute', step)}
+                      value={submittedTime.minute}
+                    />
+                  </Stack>
                 </Stack>
               ) : (
                 <Box
