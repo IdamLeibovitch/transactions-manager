@@ -1,43 +1,95 @@
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import PublicIcon from '@mui/icons-material/Public'
 import ScheduleIcon from '@mui/icons-material/Schedule'
-import SendIcon from '@mui/icons-material/Send'
 import {
+  Alert,
   Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
   Divider,
-  FormControl,
   Grid,
-  InputLabel,
-  MenuItem,
   Paper,
-  Select,
+  Snackbar,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material'
+import { useCallback, useEffect, useState } from 'react'
+import { ApprovedTransactionCards } from './ApprovedTransactionCards'
+import { TransactionForm } from './TransactionForm'
+import type { CreateTransactionRequest, TransactionDto } from './transactionTypes'
+import { createTransaction, getTransaction, listTransactions } from './transactionsApi'
 
-const approvedTransactions = [
-  {
-    id: 'TX-1024',
-    merchant: 'Terminal 42',
-    amount: 'ILS 125.50',
-    region: 'Israel',
-    localTime: '12:30',
-  },
-  {
-    id: 'TX-1025',
-    merchant: 'North Market',
-    amount: 'USD 44.20',
-    region: 'US East',
-    localTime: '09:15',
-  },
-]
+const processedStatusCheckLimit = 16
 
 export function TransactionDashboard() {
+  const [approvedTransactions, setApprovedTransactions] = useState<TransactionDto[]>([])
+  const [isLoadingApproved, setIsLoadingApproved] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [approvedError, setApprovedError] = useState<string | null>(null)
+  const [submitMessage, setSubmitMessage] = useState<string | null>(null)
+
+  const loadApprovedTransactions = useCallback(async () => {
+    setApprovedError(null)
+    setIsLoadingApproved(true)
+
+    try {
+      setApprovedTransactions(await listTransactions('Approved'))
+    } catch (error) {
+      setApprovedError(readError(error))
+    } finally {
+      setIsLoadingApproved(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadInitialApprovedTransactions() {
+      try {
+        const transactions = await listTransactions('Approved')
+
+        if (!ignore) {
+          setApprovedTransactions(transactions)
+        }
+      } catch (error) {
+        if (!ignore) {
+          setApprovedError(readError(error))
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoadingApproved(false)
+        }
+      }
+    }
+
+    void loadInitialApprovedTransactions()
+
+    return () => {
+      ignore = true
+    }
+  }, [])
+
+  async function handleSubmit(request: CreateTransactionRequest) {
+    setIsSubmitting(true)
+    setSubmitMessage(null)
+
+    try {
+      const response = await createTransaction(request)
+      const processedTransaction = await waitForProcessedTransaction(response.transactionId)
+
+      if (processedTransaction?.status === 'Approved') {
+        setSubmitMessage('Transaction approved.')
+      } else if (processedTransaction?.status === 'Rejected') {
+        setSubmitMessage(`Transaction rejected: ${processedTransaction.decisionReason ?? 'approval rules failed'}.`)
+      } else {
+        setSubmitMessage('Transaction submitted and is still pending.')
+      }
+
+      await loadApprovedTransactions()
+    } catch (error) {
+      setSubmitMessage(readError(error))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <Stack spacing={3}>
       <Stack spacing={1}>
@@ -51,42 +103,7 @@ export function TransactionDashboard() {
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 7 }}>
-          <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2 }}>
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField fullWidth label="Amount" placeholder="125.50" />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField fullWidth label="Currency" placeholder="ILS" />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <TextField fullWidth label="Merchant name" placeholder="Terminal 42" />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <FormControl fullWidth>
-                  <InputLabel id="region-label">Region</InputLabel>
-                  <Select defaultValue="IL" label="Region" labelId="region-label">
-                    <MenuItem value="IL">Israel</MenuItem>
-                    <MenuItem value="US_EAST">US East</MenuItem>
-                    <MenuItem value="UK">United Kingdom</MenuItem>
-                    <MenuItem value="EU_CENTRAL">EU Central</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Submitted instant"
-                  placeholder="2026-05-07T09:30:00Z"
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <Button startIcon={<SendIcon />} variant="contained">
-                  Submit
-                </Button>
-              </Grid>
-            </Grid>
-          </Paper>
+          <TransactionForm isSubmitting={isSubmitting} onSubmit={handleSubmit} />
         </Grid>
 
         <Grid size={{ xs: 12, md: 5 }}>
@@ -116,42 +133,44 @@ export function TransactionDashboard() {
         </Grid>
       </Grid>
 
-      <Box>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={1}
-          sx={{ alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', mb: 2 }}
-        >
-          <Typography component="h2" sx={{ fontWeight: 700 }} variant="h5">
-            Approved transactions
-          </Typography>
-          <Chip color="success" icon={<CheckCircleIcon />} label="Live updates pending" />
-        </Stack>
+      <ApprovedTransactionCards
+        error={approvedError}
+        isLoading={isLoadingApproved}
+        onRefresh={loadApprovedTransactions}
+        transactions={approvedTransactions}
+      />
 
-        <Grid container spacing={2}>
-          {approvedTransactions.map((transaction) => (
-            <Grid key={transaction.id} size={{ xs: 12, sm: 6 }}>
-              <Card variant="outlined">
-                <CardContent>
-                  <Stack spacing={1.5}>
-                    <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between' }}>
-                      <Typography sx={{ fontWeight: 700 }}>{transaction.merchant}</Typography>
-                      <Chip color="success" label="Approved" size="small" />
-                    </Stack>
-                    <Typography color="text.secondary">{transaction.id}</Typography>
-                    <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between' }}>
-                      <Typography>{transaction.amount}</Typography>
-                      <Typography color="text.secondary">
-                        {transaction.region} · {transaction.localTime}
-                      </Typography>
-                    </Stack>
-                  </Stack>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
+      <Snackbar
+        autoHideDuration={5000}
+        onClose={() => setSubmitMessage(null)}
+        open={Boolean(submitMessage)}
+      >
+        <Alert onClose={() => setSubmitMessage(null)} severity="info" variant="filled">
+          {submitMessage}
+        </Alert>
+      </Snackbar>
     </Stack>
   )
+}
+
+async function waitForProcessedTransaction(transactionId: string) {
+  for (let attempt = 0; attempt < processedStatusCheckLimit; attempt += 1) {
+    const transaction = await getTransaction(transactionId)
+
+    if (transaction.status !== 'Pending') {
+      return transaction
+    }
+
+    await delay(750)
+  }
+
+  return null
+}
+
+function delay(milliseconds: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
+}
+
+function readError(error: unknown) {
+  return error instanceof Error ? error.message : 'Unexpected error'
 }
