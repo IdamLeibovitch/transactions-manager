@@ -14,11 +14,23 @@ import {
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { LocalizationProvider as DatePickerLocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { StaticTimePicker } from '@mui/x-date-pickers/StaticTimePicker'
-import dayjs, { type Dayjs } from 'dayjs'
+import type { Dayjs } from 'dayjs'
 import { useId, useMemo, useRef, useState, type KeyboardEvent, type Ref } from 'react'
 import { useLocalization } from '../../app/LocalizationContext'
 import type { CreateTransactionRequest, RegionCode } from './transactionTypes'
 import { regions } from './transactionTypes'
+import {
+  formatTimeInputValue,
+  isValidHour,
+  isValidMinute,
+  isValidTime,
+  toDayjsTime,
+  toTimeParts,
+  toTimeString,
+  toUtcIsoStringForTimeZone,
+  wrapNumber,
+  type TimeParts,
+} from './utils/timeUtils'
 
 type FocusedTransactionFormProps = {
   isDisabled?: boolean
@@ -309,7 +321,6 @@ export function FocusedTransactionForm({
                   {t('form.timeKeyboardHelp')}
                 </Typography>
               </Stack>
-
             </Stack>
           </Box>
 
@@ -327,11 +338,6 @@ export function FocusedTransactionForm({
       </Stack>
     </Paper>
   )
-}
-
-type TimeParts = {
-  hour: string
-  minute: string
 }
 
 type TimePartInputProps = {
@@ -454,112 +460,4 @@ function TimePartInput({
       value={value}
     />
   )
-}
-
-function wrapNumber(value: number, min: number, max: number) {
-  if (value > max) {
-    return min
-  }
-
-  if (value < min) {
-    return max
-  }
-
-  return value
-}
-
-function isValidTime(value: TimeParts) {
-  return isValidHour(value.hour) && isValidMinute(value.minute)
-}
-
-function isValidHour(value: string) {
-  return /^\d{1,2}$/.test(value) && Number(value) >= 0 && Number(value) <= 23
-}
-
-function isValidMinute(value: string) {
-  return /^\d{1,2}$/.test(value) && Number(value) >= 0 && Number(value) <= 59
-}
-
-function toTimeParts(value: string): TimeParts {
-  const [hour, minute] = value.split(':')
-
-  return { hour, minute }
-}
-
-function toTimeString(value: TimeParts) {
-  return `${value.hour.padStart(2, '0')}:${value.minute.padStart(2, '0')}`
-}
-
-function toDayjsTime(value: TimeParts) {
-  if (!isValidTime(value)) {
-    return dayjs().hour(0).minute(0).second(0)
-  }
-
-  return dayjs().hour(Number(value.hour)).minute(Number(value.minute)).second(0)
-}
-
-function formatTimeInputValue(date: Date, timeZone: string) {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    hour: '2-digit',
-    hourCycle: 'h23',
-    minute: '2-digit',
-    timeZone,
-  }).formatToParts(date)
-
-  const hour = readPart(parts, 'hour') === '24' ? '00' : readPart(parts, 'hour')
-
-  return `${hour}:${readPart(parts, 'minute')}`
-}
-
-function toUtcIsoStringForTimeZone(time: string, timeZone: string) {
-  const [hours, minutes] = time.split(':').map(Number)
-  const { day, month, year } = getDatePartsInTimeZone(new Date(), timeZone)
-  const tentativeUtc = Date.UTC(year, month - 1, day, hours, minutes, 0)
-  const offset = getOffsetMinutes(timeZone, new Date(tentativeUtc))
-  const adjustedUtc = tentativeUtc - offset * 60_000
-  const verifiedOffset = getOffsetMinutes(timeZone, new Date(adjustedUtc))
-
-  return new Date(tentativeUtc - verifiedOffset * 60_000).toISOString()
-}
-
-function getDatePartsInTimeZone(date: Date, timeZone: string) {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    day: '2-digit',
-    month: '2-digit',
-    timeZone,
-    year: 'numeric',
-  }).formatToParts(date)
-
-  return {
-    day: Number(readPart(parts, 'day')),
-    month: Number(readPart(parts, 'month')),
-    year: Number(readPart(parts, 'year')),
-  }
-}
-
-function getOffsetMinutes(timeZone: string, date: Date) {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    day: '2-digit',
-    hour: '2-digit',
-    hourCycle: 'h23',
-    minute: '2-digit',
-    month: '2-digit',
-    second: '2-digit',
-    timeZone,
-    year: 'numeric',
-  }).formatToParts(date)
-  const asUtc = Date.UTC(
-    Number(readPart(parts, 'year')),
-    Number(readPart(parts, 'month')) - 1,
-    Number(readPart(parts, 'day')),
-    Number(readPart(parts, 'hour')),
-    Number(readPart(parts, 'minute')),
-    Number(readPart(parts, 'second')),
-  )
-
-  return (asUtc - date.getTime()) / 60_000
-}
-
-function readPart(parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatPartTypes) {
-  return parts.find((part) => part.type === type)?.value ?? '00'
 }
