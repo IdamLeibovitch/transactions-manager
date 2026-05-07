@@ -112,9 +112,9 @@ export function FocusedTransactionsViewer({
             )}
 
             <Box
+              dir={direction}
               ref={listRef}
               sx={{
-                direction,
                 display: 'flex',
                 gap: 2,
                 overflowX: 'auto',
@@ -127,10 +127,10 @@ export function FocusedTransactionsViewer({
               {approvedTransactions.map((transaction) => (
                 <Card
                   data-focused-transaction-card
+                  dir={direction}
                   key={transaction.id}
                   variant="outlined"
                   sx={{
-                    direction,
                     animation: `${focusedTransactionEnter} ${theme.transitions.duration.standard}ms ease 90ms both`,
                     flex: '0 0 auto',
                     minHeight: 118,

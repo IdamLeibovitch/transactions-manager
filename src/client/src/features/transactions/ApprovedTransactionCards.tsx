@@ -106,9 +106,9 @@ export function ApprovedTransactionCards({
         </Card>
       ) : (
         <Box
+          dir={direction}
           ref={listRef}
           sx={{
-            direction,
             display: 'flex',
             gap: 2,
             overflowX: 'auto',
