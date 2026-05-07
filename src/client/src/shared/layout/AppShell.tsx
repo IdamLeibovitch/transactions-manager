@@ -35,9 +35,10 @@ export function AppShell({
   onLogoutClick,
   username,
 }: AppShellProps) {
-  const { t } = useLocalization()
+  const { direction, t } = useLocalization()
   const [accountAnchorEl, setAccountAnchorEl] = useState<HTMLElement | null>(null)
   const isAccountMenuOpen = Boolean(accountAnchorEl)
+  const accountMenuHorizontalOrigin = direction === 'rtl' ? 'left' : 'right'
 
   function handleAccountClick(event: MouseEvent<HTMLElement>) {
     setAccountAnchorEl(event.currentTarget)
@@ -107,9 +108,17 @@ export function AppShell({
                 </Tooltip>
                 <Menu
                   anchorEl={accountAnchorEl}
+                  anchorOrigin={{
+                    horizontal: accountMenuHorizontalOrigin,
+                    vertical: 'bottom',
+                  }}
                   id="account-menu"
                   onClose={handleAccountClose}
                   open={isAccountMenuOpen}
+                  transformOrigin={{
+                    horizontal: accountMenuHorizontalOrigin,
+                    vertical: 'top',
+                  }}
                 >
                   <MenuItem disabled>{username}</MenuItem>
                   <MenuItem onClick={handleLogout}>
