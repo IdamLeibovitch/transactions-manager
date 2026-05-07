@@ -10,9 +10,10 @@ import {
   Stack,
   Typography,
 } from '@mui/material'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocalization } from '../../app/LocalizationContext'
 import { interpolate } from '../../app/localization'
+import { useSignalR } from '../../shared/hooks/useSignalR'
 import { ApprovedTransactionCards } from './ApprovedTransactionCards'
 import { FocusedTransactionForm } from './FocusedTransactionForm'
 import { FocusedTransactionsViewer } from './FocusedTransactionsViewer'
@@ -24,7 +25,6 @@ import type {
 } from './transactionTypes'
 import type { TransactionViewMode } from './transactionViewTypes'
 import { createTransaction, getTransaction, listTransactions, UnauthorizedError } from './transactionsApi'
-import { createTransactionsHubConnection } from './transactionsHub'
 
 type TransactionDashboardProps = {
   accessToken: string | null
@@ -40,13 +40,14 @@ const marketingImages = [
   'https://www.shva.co.il/wp-content/uploads/2023/06/clp.png',
 ]
 
+const transactionsHubUrl = import.meta.env.VITE_SIGNALR_URL ?? 'http://localhost:5081/ws/transactions'
+
 export function TransactionDashboard({ accessToken, onUnauthorized, viewMode }: TransactionDashboardProps) {
   const { t } = useLocalization()
   const [approvedTransactions, setApprovedTransactions] = useState<TransactionDto[]>([])
   const [isLoadingApproved, setIsLoadingApproved] = useState(Boolean(accessToken))
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [approvedError, setApprovedError] = useState<string | null>(null)
-  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false)
   const [submitMessage, setSubmitMessage] = useState<string | null>(null)
 
   const loadApprovedTransactions = useCallback(async () => {
@@ -71,7 +72,6 @@ export function TransactionDashboard({ accessToken, onUnauthorized, viewMode }: 
 
   const handleStatusChanged = useCallback(async (message: TransactionStatusChangedMessage) => {
     if (!accessToken) {
-      setIsRealtimeConnected(false)
       return
     }
 
@@ -98,6 +98,22 @@ export function TransactionDashboard({ accessToken, onUnauthorized, viewMode }: 
       )
     }
   }, [accessToken, onUnauthorized, t])
+
+  const signalREventHandlers = useMemo(() => [
+    {
+      eventName: 'transactionStatusChanged',
+      handler: (message: TransactionStatusChangedMessage) => {
+        void handleStatusChanged(message)
+      },
+    },
+  ], [handleStatusChanged])
+
+  const { isConnected: isRealtimeConnected } = useSignalR({
+    accessToken,
+    eventHandlers: signalREventHandlers,
+    onUnauthorized,
+    url: transactionsHubUrl,
+  })
 
   useEffect(() => {
     let ignore = false
@@ -133,68 +149,6 @@ export function TransactionDashboard({ accessToken, onUnauthorized, viewMode }: 
       ignore = true
     }
   }, [accessToken, onUnauthorized, t])
-
-  useEffect(() => {
-    if (!accessToken) {
-      return
-    }
-
-    let disposed = false
-
-    const connection = createTransactionsHubConnection({
-      accessToken,
-      onClose: () => {
-        if (!disposed) {
-          setIsRealtimeConnected(false)
-        }
-      },
-      onReconnected: () => {
-        if (!disposed) {
-          setIsRealtimeConnected(true)
-        }
-      },
-      onReconnecting: () => {
-        if (!disposed) {
-          setIsRealtimeConnected(false)
-        }
-      },
-      onStatusChanged: (message) => {
-        void handleStatusChanged(message)
-      },
-    })
-
-    async function startConnection() {
-      while (!disposed) {
-        try {
-          await connection.start()
-
-          if (!disposed) {
-            setIsRealtimeConnected(true)
-          }
-
-          return
-        } catch (error) {
-          if (isUnauthorizedConnectionError(error)) {
-            onUnauthorized()
-            return
-          }
-
-          if (!disposed) {
-            setIsRealtimeConnected(false)
-          }
-
-          await delay(2000)
-        }
-      }
-    }
-
-    void startConnection()
-
-    return () => {
-      disposed = true
-      void connection.stop()
-    }
-  }, [accessToken, handleStatusChanged, onUnauthorized])
 
   async function handleSubmit(request: CreateTransactionRequest) {
     if (!accessToken) {
@@ -449,10 +403,6 @@ function upsertApprovedTransaction(current: TransactionDto[], transaction: Trans
   )
 }
 
-function delay(milliseconds: number) {
-  return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
-}
-
 function readError(error: unknown, t: ReturnType<typeof useLocalization>['t']) {
   return error instanceof Error ? error.message : t('common.unexpectedError')
 }
@@ -469,10 +419,6 @@ function handleApiError(
   }
 
   onOtherError(readError(error, t))
-}
-
-function isUnauthorizedConnectionError(error: unknown) {
-  return error instanceof Error && /(?:401|Unauthorized)/i.test(error.message)
 }
 
 function shortId(id: string) {
