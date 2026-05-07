@@ -289,6 +289,9 @@ export function FocusedTransactionForm({
                       pb: 0,
                       pt: 0,
                     },
+                    '& .MuiPickersToolbar-title': {
+                      display: 'none',
+                    },
                     '& .MuiTimeClock-arrowSwitcher': {
                       right: { xs: 24, sm: 32 },
                       top: 4,
