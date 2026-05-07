@@ -1,6 +1,89 @@
 name: transactions-manager
 
 services:
+  client:
+    build:
+      context: .
+      dockerfile: src/client/Dockerfile
+      args:
+        VITE_API_BASE_URL: ""
+        VITE_SIGNALR_URL: "/ws/transactions"
+    ports:
+      - "${CLIENT_PORT:-5173}:80"
+    depends_on:
+      gateway-api:
+        condition: service_started
+      notification-service:
+        condition: service_started
+
+  gateway-api:
+    build:
+      context: .
+      dockerfile: src/backend/Dockerfile
+      args:
+        PROJECT_PATH: src/backend/GatewayApi/TransactionsManager.GatewayApi.csproj
+        APP_DLL: TransactionsManager.GatewayApi.dll
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__SqlServer: "Server=mssql,1433;Database=TransactionsManager;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Change_this_password_123!};TrustServerCertificate=True"
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__Username: ${RabbitMq__Username:-guest}
+      RabbitMq__Password: ${RabbitMq__Password:-guest}
+      Jwt__Issuer: ${Jwt__Issuer:-transactions-manager}
+      Jwt__Audience: ${Jwt__Audience:-transactions-manager-client}
+      Jwt__SigningKey: ${Jwt__SigningKey:-development-only-signing-key-change-before-production}
+      Jwt__ExpirationMinutes: ${Jwt__ExpirationMinutes:-60}
+      Auth__DevelopmentUser__Username: ${Auth__DevelopmentUser__Username:-admin}
+      Auth__DevelopmentUser__Password: ${Auth__DevelopmentUser__Password:-Pass123!}
+      Cors__AllowedOrigins__0: "http://localhost:${CLIENT_PORT:-5173}"
+    depends_on:
+      mssql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  transaction-processor:
+    build:
+      context: .
+      dockerfile: src/backend/Dockerfile
+      args:
+        PROJECT_PATH: src/backend/TransactionProcessor/TransactionsManager.TransactionProcessor.csproj
+        APP_DLL: TransactionsManager.TransactionProcessor.dll
+    environment:
+      DOTNET_ENVIRONMENT: ${DOTNET_ENVIRONMENT:-Development}
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__Username: ${RabbitMq__Username:-guest}
+      RabbitMq__Password: ${RabbitMq__Password:-guest}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: src/backend/Dockerfile
+      args:
+        PROJECT_PATH: src/backend/NotificationService/TransactionsManager.NotificationService.csproj
+        APP_DLL: TransactionsManager.NotificationService.dll
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:8080
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__Username: ${RabbitMq__Username:-guest}
+      RabbitMq__Password: ${RabbitMq__Password:-guest}
+      Jwt__Issuer: ${Jwt__Issuer:-transactions-manager}
+      Jwt__Audience: ${Jwt__Audience:-transactions-manager-client}
+      Jwt__SigningKey: ${Jwt__SigningKey:-development-only-signing-key-change-before-production}
+      Jwt__ExpirationMinutes: ${Jwt__ExpirationMinutes:-60}
+      Cors__AllowedOrigins__0: "http://localhost:${CLIENT_PORT:-5173}"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
   mssql:
     image: mcr.microsoft.com/mssql/server:2022-latest
     platform: linux/amd64

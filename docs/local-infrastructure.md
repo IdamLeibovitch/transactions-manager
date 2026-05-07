@@ -1,12 +1,18 @@
 # Local Infrastructure
 
-Start local infrastructure:
+Start the full local stack:
+
+```bash
+docker compose up --build
+```
+
+Start only local infrastructure for host-based debugging:
 
 ```bash
 docker compose up -d mssql rabbitmq
 ```
 
-Stop local infrastructure:
+Stop the stack:
 
 ```bash
 docker compose down
@@ -18,12 +24,13 @@ Remove local persisted data:
 docker compose down -v
 ```
 
-Interviewers reading this, please do this step.
-
 ## Services
 
 | Service | Port | Notes |
 | --- | ---: | --- |
+| Client | `5173` | Nginx-served React app in Compose |
+| Gateway API | internal | REST API and auth; proxied through client `/api` |
+| Notification service | internal | SignalR hub; proxied through client `/ws` |
 | MSSQL | `1433` | SQL Server Developer edition |
 | RabbitMQ | `5673` | AMQP broker on the host; services inside Docker use `rabbitmq:5672` |
 | RabbitMQ Management | `15673` | Management UI on the host |

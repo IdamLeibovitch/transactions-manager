@@ -6,7 +6,7 @@ The project uses a microservice-inspired architecture while staying small enough
 
 | Component | Responsibility |
 | --- | --- |
-| `client` | React + Material UI app, JWT login, localization, transaction submission, approved transaction views, SignalR updates |
+| `client` | React + Material UI app, JWT login, localization, transaction submission, approved transaction views, SignalR updates, Nginx static hosting and proxying in Docker |
 | `gateway-api` | Public REST API, request validation, JWT issuing and validation, transaction persistence, submitted-event publishing, processed-event consumption |
 | `transaction-processor` | RabbitMQ worker that evaluates approval rules and publishes processed events |
 | `notification-service` | RabbitMQ processed-event consumer and SignalR hub for browser updates |
@@ -134,6 +134,23 @@ RabbitMQ is preferred over Kafka for this assignment because it is lightweight t
 SignalR is used only for notifying clients that a transaction status changed. The client still refreshes approved transactions from the gateway so the UI remains consistent with persisted state.
 
 This gives a clear real-time demo without making SignalR the source of truth.
+
+## Container Networking
+
+`docker compose up --build` runs the client, gateway, processor, notification service, MSSQL, and RabbitMQ.
+
+The browser opens `http://localhost:5173`. The client container serves the built React app through Nginx and proxies:
+
+- `/api` to `gateway-api:8080`.
+- `/ws` to `notification-service:8080`.
+
+The gateway and notification service are intentionally not published to host ports in the Compose setup. This keeps the single-command demo focused on the client URL and avoids conflicts with host-run backend services during development.
+
+The backend containers use Docker DNS names for service-to-service communication:
+
+- `gateway-api` connects to `mssql:1433` and `rabbitmq:5672`.
+- `transaction-processor` connects to `rabbitmq:5672`.
+- `notification-service` connects to `rabbitmq:5672`.
 
 ## Simplifications
 

@@ -38,19 +38,29 @@ Prerequisites:
 - .NET SDK `10`.
 - Node.js and npm.
 
-Create local environment settings:
+Create local environment settings if you do not already have `.env`:
 
 ```bash
 cp .env.example .env
 ```
 
-Start MSSQL and RabbitMQ:
+Run the whole stack:
+
+```bash
+docker compose up --build
+```
+
+Open `http://localhost:5173`.
+
+The client is served from an Nginx container. Nginx proxies `/api` to `gateway-api` and `/ws` to `notification-service`, so the browser only needs the client URL.
+
+For backend debugging, you can still run only the infrastructure containers:
 
 ```bash
 docker compose up -d mssql rabbitmq
 ```
 
-Run the backend services in separate terminals:
+Then run the backend services from the host in separate terminals:
 
 ```bash
 dotnet run --project src/backend/GatewayApi/TransactionsManager.GatewayApi.csproj
@@ -59,16 +69,6 @@ dotnet run --project src/backend/NotificationService/TransactionsManager.Notific
 ```
 
 The gateway applies EF Core migrations on startup.
-
-Run the client:
-
-```bash
-cd src/client
-npm install
-npm run dev
-```
-
-Open the Vite URL, usually `http://localhost:5173`.
 
 Development login:
 
@@ -80,10 +80,9 @@ Development login:
 | Service | URL |
 | --- | --- |
 | Client | `http://localhost:5173` |
-| Gateway API | `http://localhost:5080` |
-| Notification SignalR hub | `http://localhost:5081/ws/transactions` |
-| Gateway health | `http://localhost:5080/health` |
-| Notification health | `http://localhost:5081/health` |
+| Gateway API | Proxied through `http://localhost:5173/api` in Compose; direct `http://localhost:5080` in host development |
+| Notification SignalR hub | Proxied through `http://localhost:5173/ws/transactions` in Compose; direct `http://localhost:5081/ws/transactions` in host development |
+| Gateway service info | `http://localhost:5173/api/service-info` |
 | RabbitMQ Management | `http://localhost:15673` |
 
 RabbitMQ management uses `guest` / `guest` by default.

@@ -11,6 +11,8 @@ const string clientCorsPolicy = "client";
 
 JwtOptions jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()
     ?? throw new InvalidOperationException("Jwt configuration is required.");
+string[] clientOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? ["http://localhost:5173"];
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMq"));
@@ -62,7 +64,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy(clientCorsPolicy, policy =>
     {
         policy
-            .WithOrigins("http://localhost:5173")
+            .WithOrigins(clientOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();

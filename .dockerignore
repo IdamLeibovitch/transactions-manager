@@ -1,0 +1,22 @@
+.git
+.DS_Store
+.idea
+.vscode
+
+# Local environment and generated output
+.env
+.env.*
+!.env.example
+docker-data
+logs
+
+# .NET
+**/bin
+**/obj
+**/TestResults
+
+# Node/Vite
+src/client/node_modules
+src/client/dist
+src/client/coverage
+src/client/.vite
