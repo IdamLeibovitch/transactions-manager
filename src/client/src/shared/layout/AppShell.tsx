@@ -1,4 +1,3 @@
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
 import LoginIcon from '@mui/icons-material/Login'
 import LogoutIcon from '@mui/icons-material/Logout'
 import NotificationsIcon from '@mui/icons-material/Notifications'
@@ -40,7 +39,12 @@ export function AppShell({
         sx={{ borderBottom: 1, borderColor: 'divider' }}
       >
         <Toolbar sx={{ gap: 2 }}>
-          <AccountBalanceIcon color="primary" />
+          <Box
+            alt="Shva"
+            component="img"
+            src="/shva-logo.png"
+            sx={{ display: 'block', height: { xs: 28, sm: 34 }, width: 'auto' }}
+          />
           <Typography
             component="h1"
             sx={{ flexGrow: 1, fontSize: { xs: 18, sm: 20 }, fontWeight: 700 }}
