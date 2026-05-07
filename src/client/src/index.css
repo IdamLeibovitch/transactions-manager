@@ -1,3 +1,35 @@
+@font-face {
+  font-family: 'FtMonopol-WEB';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('./assets/fonts/FtMonopol-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'FtMonopol-WEB';
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  src: url('./assets/fonts/FtMonopol-SemiBold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'FtMonopol-WEB';
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url('./assets/fonts/FtMonopol-Bold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'FtMonopol-WEB';
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+  src: url('./assets/fonts/FtMonopol-ExtraBold.woff2') format('woff2');
+}
+
 html {
   min-width: 320px;
   min-height: 100%;

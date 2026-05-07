@@ -353,6 +353,7 @@ function FocusedMarketingPanel() {
                 fontWeight: 800,
                 lineHeight: 1.12,
               }}
+              variant="h1"
             >
               {t('marketing.title')}
             </Typography>

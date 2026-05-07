@@ -1,6 +1,9 @@
 import { createTheme } from '@mui/material/styles'
 import type { TextDirection } from './localization'
 
+const bodyFontFamily = ['Roboto', 'Arial', 'sans-serif'].join(',')
+const titleFontFamily = ['FtMonopol-WEB', 'Roboto', 'Arial', 'sans-serif'].join(',')
+
 export function createAppTheme(direction: TextDirection) {
   return createTheme({
     direction,
@@ -25,23 +28,29 @@ export function createAppTheme(direction: TextDirection) {
       borderRadius: 8,
     },
     typography: {
-      fontFamily: ['Roboto', 'Arial', 'sans-serif'].join(','),
+      fontFamily: bodyFontFamily,
       h1: {
+        fontFamily: titleFontFamily,
         letterSpacing: 0,
       },
       h2: {
+        fontFamily: titleFontFamily,
         letterSpacing: 0,
       },
       h3: {
+        fontFamily: titleFontFamily,
         letterSpacing: 0,
       },
       h4: {
+        fontFamily: titleFontFamily,
         letterSpacing: 0,
       },
       h5: {
+        fontFamily: titleFontFamily,
         letterSpacing: 0,
       },
       h6: {
+        fontFamily: titleFontFamily,
         letterSpacing: 0,
       },
       button: {
