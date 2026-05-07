@@ -7,7 +7,7 @@ export function createAppTheme(direction: TextDirection) {
     palette: {
       mode: 'light',
       primary: {
-        main: '#155eef',
+        main: '#41247e',
       },
       secondary: {
         main: '#0f766e',

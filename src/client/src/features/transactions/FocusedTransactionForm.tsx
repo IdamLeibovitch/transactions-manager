@@ -1,14 +1,22 @@
+import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import SendIcon from '@mui/icons-material/Send'
 import {
   Alert,
   Autocomplete,
   Box,
   Button,
+  Collapse,
+  IconButton,
   Paper,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material'
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import { LocalizationProvider as DatePickerLocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import { StaticTimePicker } from '@mui/x-date-pickers/StaticTimePicker'
+import dayjs, { type Dayjs } from 'dayjs'
 import { useMemo, useState } from 'react'
 import { useLocalization } from '../../app/LocalizationContext'
 import type { CreateTransactionRequest, RegionCode } from './transactionTypes'
@@ -43,10 +51,14 @@ export function FocusedTransactionForm({
   )
   const [selectedRegionCode, setSelectedRegionCode] = useState<RegionCode>('IL')
   const selectedTimeZone = timeZoneOptions.find((option) => option.code === selectedRegionCode) ?? timeZoneOptions[0]
-  const [submittedTime, setSubmittedTime] = useState(formatTimeInputValue(new Date(), timeZoneOptions[0].timeZone))
+  const [submittedTime, setSubmittedTime] = useState<TimeParts>(() =>
+    toTimeParts(formatTimeInputValue(new Date(), timeZoneOptions[0].timeZone)),
+  )
+  const [isPickerOpen, setIsPickerOpen] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
   const isTimeInvalid = !isValidTime(submittedTime)
+  const timePickerValue = toDayjsTime(submittedTime)
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -61,7 +73,7 @@ export function FocusedTransactionForm({
       currency: 'ILS',
       merchantName: 'Terminal 42',
       region: selectedTimeZone.code,
-      submittedAt: toUtcIsoStringForTimeZone(submittedTime, selectedTimeZone.timeZone),
+      submittedAt: toUtcIsoStringForTimeZone(toTimeString(submittedTime), selectedTimeZone.timeZone),
     })
   }
 
@@ -71,7 +83,27 @@ export function FocusedTransactionForm({
     }
 
     setSelectedRegionCode(option.code)
-    setSubmittedTime(formatTimeInputValue(new Date(), option.timeZone))
+    setSubmittedTime(toTimeParts(formatTimeInputValue(new Date(), option.timeZone)))
+  }
+
+  function handleTimePartChange(part: keyof TimeParts, value: string) {
+    const digitsOnly = value.replace(/\D/g, '').slice(0, 2)
+
+    setSubmittedTime((current) => ({
+      ...current,
+      [part]: digitsOnly,
+    }))
+  }
+
+  function handlePickerChange(value: Dayjs | null) {
+    if (!value) {
+      return
+    }
+
+    setSubmittedTime({
+      hour: String(value.hour()).padStart(2, '0'),
+      minute: String(value.minute()).padStart(2, '0'),
+    })
   }
 
   return (
@@ -119,33 +151,88 @@ export function FocusedTransactionForm({
           />
 
           <Box>
-            <Typography color="text.secondary" sx={{ mb: 1, fontWeight: 600 }} variant="body2">
-              {t('form.localTime')}
-            </Typography>
-            <TextField
-              disabled={isDisabled || isSubmitting}
-              error={submitted && isTimeInvalid}
-              fullWidth
-              helperText={submitted && isTimeInvalid ? t('validation.submittedAt') : t('form.localTimeHelper')}
-              onChange={(event) => setSubmittedTime(event.target.value)}
-              slotProps={{
-                htmlInput: {
-                  step: 60,
-                },
-              }}
+            <Stack
+              spacing={2.5}
               sx={{
-                '& input': {
-                  fontSize: { xs: 36, sm: 48 },
-                  fontWeight: 700,
-                  height: 'auto',
-                  letterSpacing: 0,
-                  py: 2,
-                  textAlign: 'center',
-                },
+                bgcolor: '#d7cdea',
+                borderRadius: 6,
+                p: { xs: 2.5, sm: 3 },
               }}
-              type="time"
-              value={submittedTime}
-            />
+            >
+              <Typography color="text.secondary" sx={{ fontWeight: 700 }}>
+                {t('form.enterTime')}
+              </Typography>
+
+              <Stack direction="row" spacing={{ xs: 1.5, sm: 2 }} sx={{ alignItems: 'flex-start' }}>
+                <TimePartInput
+                  disabled={isDisabled || isSubmitting}
+                  error={submitted && !isValidHour(submittedTime.hour)}
+                  label={t('form.hour')}
+                  onChange={(value) => handleTimePartChange('hour', value)}
+                  value={submittedTime.hour}
+                />
+                <Typography
+                  sx={{
+                    color: 'text.primary',
+                    fontSize: { xs: 48, sm: 64 },
+                    fontWeight: 700,
+                    lineHeight: 1.05,
+                    pt: 1.5,
+                  }}
+                >
+                  :
+                </Typography>
+                <TimePartInput
+                  disabled={isDisabled || isSubmitting}
+                  error={submitted && !isValidMinute(submittedTime.minute)}
+                  label={t('form.minute')}
+                  onChange={(value) => handleTimePartChange('minute', value)}
+                  value={submittedTime.minute}
+                />
+              </Stack>
+
+              <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+                <Tooltip title={t('form.timePicker')}>
+                  <IconButton
+                    aria-label={t('form.timePicker')}
+                    disabled={isDisabled || isSubmitting}
+                    onClick={() => setIsPickerOpen((current) => !current)}
+                  >
+                    <AccessTimeIcon />
+                  </IconButton>
+                </Tooltip>
+                <Typography color={submitted && isTimeInvalid ? 'error' : 'text.secondary'} variant="body2">
+                  {submitted && isTimeInvalid ? t('validation.submittedAt') : t('form.localTimeHelper')}
+                </Typography>
+              </Stack>
+
+              <Collapse in={isPickerOpen} unmountOnExit>
+                <Box
+                  sx={{
+                    '& .MuiPickersLayout-root': {
+                      bgcolor: 'transparent',
+                    },
+                    '& .MuiTimeClock-root': {
+                      mx: 'auto',
+                    },
+                  }}
+                >
+                  <DatePickerLocalizationProvider dateAdapter={AdapterDayjs}>
+                    <StaticTimePicker
+                      ampm={false}
+                      onChange={handlePickerChange}
+                      orientation="portrait"
+                      slotProps={{
+                        actionBar: {
+                          actions: [],
+                        },
+                      }}
+                      value={timePickerValue}
+                    />
+                  </DatePickerLocalizationProvider>
+                </Box>
+              </Collapse>
+            </Stack>
           </Box>
 
           <Button
@@ -164,8 +251,84 @@ export function FocusedTransactionForm({
   )
 }
 
-function isValidTime(value: string) {
-  return /^\d{2}:\d{2}$/.test(value)
+type TimeParts = {
+  hour: string
+  minute: string
+}
+
+type TimePartInputProps = {
+  disabled: boolean
+  error: boolean
+  label: string
+  onChange: (value: string) => void
+  value: string
+}
+
+function TimePartInput({ disabled, error, label, onChange, value }: TimePartInputProps) {
+  return (
+    <TextField
+      disabled={disabled}
+      error={error}
+      fullWidth
+      label={label}
+      onChange={(event) => onChange(event.target.value)}
+      slotProps={{
+        htmlInput: {
+          inputMode: 'numeric',
+          maxLength: 2,
+        },
+      }}
+      sx={{
+        '& .MuiInputBase-input': {
+          fontSize: { xs: 48, sm: 64 },
+          fontWeight: 700,
+          height: 'auto',
+          letterSpacing: 0,
+          lineHeight: 1.05,
+          py: 1.5,
+          textAlign: 'center',
+        },
+        '& .MuiInputLabel-root': {
+          fontWeight: 600,
+        },
+        '& .MuiOutlinedInput-root': {
+          bgcolor: error ? '#fff5f5' : '#f0e8ff',
+          borderRadius: 2,
+        },
+      }}
+      value={value}
+    />
+  )
+}
+
+function isValidTime(value: TimeParts) {
+  return isValidHour(value.hour) && isValidMinute(value.minute)
+}
+
+function isValidHour(value: string) {
+  return /^\d{1,2}$/.test(value) && Number(value) >= 0 && Number(value) <= 23
+}
+
+function isValidMinute(value: string) {
+  return /^\d{1,2}$/.test(value) && Number(value) >= 0 && Number(value) <= 59
+}
+
+function toTimeParts(value: string): TimeParts {
+  const [hour, minute] = value.split(':')
+
+  return { hour, minute }
+}
+
+function toTimeString(value: TimeParts) {
+  return `${value.hour.padStart(2, '0')}:${value.minute.padStart(2, '0')}`
+}
+
+function toDayjsTime(value: TimeParts) {
+  if (!isValidTime(value)) {
+    return dayjs().hour(0).minute(0).second(0)
+  }
+
+  return dayjs().hour(Number(value.hour)).minute(Number(value.minute)).second(0)
 }
 
 function formatTimeInputValue(date: Date, timeZone: string) {
