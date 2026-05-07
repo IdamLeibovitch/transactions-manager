@@ -192,16 +192,20 @@ export function FocusedTransactionForm({
 
           <Box>
             <Stack
-              spacing={2.5}
+              spacing={timeEntryMode === 'text' ? 2.5 : 1}
               sx={{
                 bgcolor: '#d7cdea',
                 borderRadius: 6,
-                p: { xs: 2.5, sm: 3 },
+                p: timeEntryMode === 'text' ? { xs: 2.5, sm: 3 } : { xs: 1.5, sm: 2 },
               }}
             >
               {timeEntryMode === 'text' ? (
                 <Stack spacing={2.5}>
-                  <Typography color="text.secondary" id={timeGroupLabelId} sx={{ fontWeight: 700 }}>
+                  <Typography
+                    color="text.primary"
+                    id={timeGroupLabelId}
+                    sx={{ fontSize: 14, fontWeight: 700, lineHeight: 1.2 }}
+                  >
                     {t('form.enterTime')}
                   </Typography>
                   <Stack
@@ -260,11 +264,50 @@ export function FocusedTransactionForm({
               ) : (
                 <Box
                   sx={{
+                    '& .MuiClock-clock': {
+                      bgcolor: 'rgba(65, 36, 126, 0.07)',
+                    },
+                    '& .MuiDialogActions-root': {
+                      display: 'none',
+                    },
                     '& .MuiPickersLayout-root': {
                       bgcolor: 'transparent',
+                      display: 'block',
+                      minWidth: 0,
+                    },
+                    '& .MuiPickersLayout-contentWrapper': {
+                      alignItems: 'center',
+                      display: 'flex',
+                      justifyContent: 'center',
+                    },
+                    '& .MuiPickersToolbar-content': {
+                      justifyContent: 'center',
+                    },
+                    '& .MuiPickersToolbar-root': {
+                      maxWidth: 260,
+                      mx: 'auto',
+                      pb: 0,
+                      pt: 0,
+                    },
+                    '& .MuiTimeClock-arrowSwitcher': {
+                      right: { xs: 24, sm: 32 },
+                      top: 4,
                     },
                     '& .MuiTimeClock-root': {
+                      height: 232,
+                      maxHeight: 232,
                       mx: 'auto',
+                      overflow: 'hidden',
+                      width: 280,
+                    },
+                    '& .MuiTimeClock-root .MuiClock-root': {
+                      margin: '0 auto',
+                    },
+                    '& .MuiTypography-overline': {
+                      color: 'text.secondary',
+                      fontSize: 11,
+                      lineHeight: 1.2,
+                      mb: 0.5,
                     },
                   }}
                 >
