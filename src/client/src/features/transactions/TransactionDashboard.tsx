@@ -216,7 +216,7 @@ export function TransactionDashboard({ accessToken, onUnauthorized, viewMode }: 
   }
 
   return viewMode === 'focused' ? (
-    <Stack spacing={{ xs: 4, md: 5 }} sx={{ flexGrow: 1, width: '100%' }}>
+    <Stack spacing={{ xs: 4, md: 5 }} sx={{ flexGrow: 1, width: '100%' }} useFlexGap>
       <Grid container spacing={{ xs: 3, md: 5 }} sx={{ alignItems: 'center' }}>
         <Grid size={{ xs: 12, md: 5 }}>
           <FocusedTransactionForm
@@ -249,7 +249,7 @@ export function TransactionDashboard({ accessToken, onUnauthorized, viewMode }: 
       </Snackbar>
     </Stack>
   ) : (
-    <Stack spacing={3} sx={{ flexGrow: 1, width: '100%' }}>
+    <Stack spacing={3} sx={{ flexGrow: 1, width: '100%' }} useFlexGap>
       <Stack spacing={1}>
         <Typography component="h2" sx={{ fontWeight: 700 }} variant="h4">
           {t('dashboard.title')}
