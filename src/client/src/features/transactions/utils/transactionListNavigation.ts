@@ -26,11 +26,24 @@ export function scrollTransactionList(
   const targetIndex = action === 'next'
     ? getNextTargetIndex(cardRects, listRect, firstFullyVisibleIndex, lastFullyVisibleIndex, visibleCount)
     : getPreviousTargetIndex(cardRects, listRect, firstFullyVisibleIndex, visibleCount)
+  const targetCard = cards[targetIndex]
 
-  cards[targetIndex]?.scrollIntoView({
+  if (!targetCard) {
+    return
+  }
+
+  scrollCardIntoListView(list, targetCard)
+}
+
+function scrollCardIntoListView(list: HTMLDivElement, card: HTMLElement) {
+  const listRect = list.getBoundingClientRect()
+  const cardRect = card.getBoundingClientRect()
+  const isRtl = window.getComputedStyle(list).direction === 'rtl'
+  const left = list.scrollLeft + (isRtl ? cardRect.right - listRect.right : cardRect.left - listRect.left)
+
+  list.scrollTo({
     behavior: 'smooth',
-    block: 'nearest',
-    inline: 'start',
+    left,
   })
 }
 

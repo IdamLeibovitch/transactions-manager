@@ -21,8 +21,7 @@ export function TransactionNavigationButton({
   title,
 }: TransactionNavigationButtonProps) {
   const { direction } = useLocalization()
-  const side = getNavigationSide(action, direction)
-  const Icon = side === 'left' ? ChevronLeftIcon : ChevronRightIcon
+  const pointsLeft = shouldPointLeft(action, direction)
 
   return (
     <Tooltip title={title}>
@@ -31,24 +30,24 @@ export function TransactionNavigationButton({
           aria-label={title}
           disabled={disabled}
           onClick={onClick}
-          sx={placement === 'side' ? getSideButtonStyles(side) : undefined}
+          sx={placement === 'side' ? getSideButtonStyles(action) : undefined}
         >
-          <Icon />
+          {pointsLeft ? <ChevronLeftIcon /> : <ChevronRightIcon />}
         </IconButton>
       </span>
     </Tooltip>
   )
 }
 
-function getNavigationSide(action: TransactionNavigationAction, direction: TextDirection) {
+function shouldPointLeft(action: TransactionNavigationAction, direction: TextDirection) {
   if (action === 'previous') {
-    return direction === 'rtl' ? 'right' : 'left'
+    return direction !== 'rtl'
   }
 
-  return direction === 'rtl' ? 'left' : 'right'
+  return direction === 'rtl'
 }
 
-function getSideButtonStyles(side: 'left' | 'right') {
+function getSideButtonStyles(action: TransactionNavigationAction) {
   return {
     bgcolor: 'background.paper',
     border: 1,
@@ -58,7 +57,7 @@ function getSideButtonStyles(side: 'left' | 'right') {
     top: '50%',
     transform: 'translateY(-50%)',
     zIndex: 1,
-    ...(side === 'left' ? { left: -22 } : { right: -22 }),
+    ...(action === 'previous' ? { insetInlineStart: 8 } : { insetInlineEnd: 8 }),
     '&:hover': {
       bgcolor: 'background.paper',
     },
