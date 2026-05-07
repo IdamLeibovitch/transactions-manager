@@ -13,7 +13,7 @@ export async function login(request: LoginRequest) {
   })
 
   if (!response.ok) {
-    throw new Error(response.status === 401 ? 'Invalid username or password.' : 'Login failed.')
+    throw new Error(response.status === 401 ? 'auth.invalidCredentials' : 'auth.loginFailed')
   }
 
   return (await response.json()) as LoginResponse

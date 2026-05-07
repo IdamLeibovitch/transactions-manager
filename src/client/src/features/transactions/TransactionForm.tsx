@@ -12,6 +12,7 @@ import {
   TextField,
 } from '@mui/material'
 import { useMemo, useState } from 'react'
+import { useLocalization } from '../../app/LocalizationContext'
 import type { CreateTransactionRequest, RegionCode } from './transactionTypes'
 import { regions } from './transactionTypes'
 
@@ -38,10 +39,11 @@ const initialState: FormState = {
 }
 
 export function TransactionForm({ isDisabled = false, isSubmitting, onSubmit }: TransactionFormProps) {
+  const { t } = useLocalization()
   const [formState, setFormState] = useState<FormState>(initialState)
   const [submitted, setSubmitted] = useState(false)
 
-  const validation = useMemo(() => validateForm(formState), [formState])
+  const validation = useMemo(() => validateForm(formState, t), [formState, t])
   const showErrors = submitted && Object.keys(validation).length > 0
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -66,7 +68,7 @@ export function TransactionForm({ isDisabled = false, isSubmitting, onSubmit }: 
       <Grid container spacing={2}>
         {showErrors && (
           <Grid size={{ xs: 12 }}>
-            <Alert severity="error">Fix the highlighted fields before submitting.</Alert>
+            <Alert severity="error">{t('form.fixErrors')}</Alert>
           </Grid>
         )}
 
@@ -77,7 +79,7 @@ export function TransactionForm({ isDisabled = false, isSubmitting, onSubmit }: 
             fullWidth
             helperText={submitted ? validation.amount : ' '}
             inputMode="decimal"
-            label="Amount"
+            label={t('form.amount')}
             onChange={(event) => updateField('amount', event.target.value)}
             placeholder="125.50"
             value={formState.amount}
@@ -90,7 +92,7 @@ export function TransactionForm({ isDisabled = false, isSubmitting, onSubmit }: 
             error={submitted && Boolean(validation.currency)}
             fullWidth
             helperText={submitted ? validation.currency : ' '}
-            label="Currency"
+            label={t('form.currency')}
             onChange={(event) => updateField('currency', event.target.value.toUpperCase())}
             placeholder="ILS"
             slotProps={{ htmlInput: { maxLength: 3 } }}
@@ -104,7 +106,7 @@ export function TransactionForm({ isDisabled = false, isSubmitting, onSubmit }: 
             error={submitted && Boolean(validation.merchantName)}
             fullWidth
             helperText={submitted ? validation.merchantName : ' '}
-            label="Merchant name"
+            label={t('form.merchantName')}
             onChange={(event) => updateField('merchantName', event.target.value)}
             placeholder="Terminal 42"
             value={formState.merchantName}
@@ -113,17 +115,17 @@ export function TransactionForm({ isDisabled = false, isSubmitting, onSubmit }: 
 
         <Grid size={{ xs: 12, sm: 6 }}>
           <FormControl fullWidth>
-            <InputLabel id="region-label">Region</InputLabel>
+            <InputLabel id="region-label">{t('form.region')}</InputLabel>
             <Select
               disabled={isDisabled || isSubmitting}
-              label="Region"
+              label={t('form.region')}
               labelId="region-label"
               onChange={(event) => updateField('region', event.target.value as RegionCode)}
               value={formState.region}
             >
               {regions.map((region) => (
                 <MenuItem key={region.code} value={region.code}>
-                  {region.label}
+                  {t(region.translationKey)}
                 </MenuItem>
               ))}
             </Select>
@@ -135,8 +137,8 @@ export function TransactionForm({ isDisabled = false, isSubmitting, onSubmit }: 
             disabled={isDisabled || isSubmitting}
             error={submitted && Boolean(validation.submittedAtUtc)}
             fullWidth
-            helperText={submitted ? validation.submittedAtUtc : 'UTC instant used for approval'}
-            label="Submitted instant"
+            helperText={submitted ? validation.submittedAtUtc : t('form.utcHelper')}
+            label={t('form.submittedInstant')}
             onChange={(event) => updateField('submittedAtUtc', event.target.value)}
             slotProps={{ htmlInput: { step: 60 } }}
             type="datetime-local"
@@ -153,7 +155,7 @@ export function TransactionForm({ isDisabled = false, isSubmitting, onSubmit }: 
               type="submit"
               variant="contained"
             >
-              Submit transaction
+              {t('form.submit')}
             </Button>
           </Stack>
         </Grid>
@@ -169,25 +171,25 @@ export function TransactionForm({ isDisabled = false, isSubmitting, onSubmit }: 
   }
 }
 
-function validateForm(formState: FormState) {
+function validateForm(formState: FormState, t: ReturnType<typeof useLocalization>['t']) {
   const errors: Partial<Record<keyof FormState, string>> = {}
   const amount = Number(formState.amount)
 
   if (!Number.isFinite(amount) || amount <= 0) {
-    errors.amount = 'Amount must be greater than zero.'
+    errors.amount = t('validation.amount')
   }
 
   if (formState.currency.trim().length !== 3) {
-    errors.currency = 'Use a three-letter currency code.'
+    errors.currency = t('validation.currency')
   }
 
   const merchantName = formState.merchantName.trim()
   if (merchantName.length === 0 || merchantName.length > 120) {
-    errors.merchantName = 'Merchant name is required and cannot exceed 120 characters.'
+    errors.merchantName = t('validation.merchantName')
   }
 
   if (Number.isNaN(new Date(toUtcIsoString(formState.submittedAtUtc)).getTime())) {
-    errors.submittedAtUtc = 'Choose a valid submitted instant.'
+    errors.submittedAtUtc = t('validation.submittedAt')
   }
 
   return errors

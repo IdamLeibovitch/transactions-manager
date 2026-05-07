@@ -11,6 +11,8 @@ import {
   Typography,
 } from '@mui/material'
 import { useCallback, useEffect, useState } from 'react'
+import { useLocalization } from '../../app/LocalizationContext'
+import { interpolate } from '../../app/localization'
 import { ApprovedTransactionCards } from './ApprovedTransactionCards'
 import { TransactionForm } from './TransactionForm'
 import type {
@@ -28,6 +30,7 @@ type TransactionDashboardProps = {
 }
 
 export function TransactionDashboard({ accessToken }: TransactionDashboardProps) {
+  const { t } = useLocalization()
   const [approvedTransactions, setApprovedTransactions] = useState<TransactionDto[]>([])
   const [isLoadingApproved, setIsLoadingApproved] = useState(Boolean(accessToken))
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -51,11 +54,11 @@ export function TransactionDashboard({ accessToken }: TransactionDashboardProps)
     try {
       setApprovedTransactions(await listTransactions(accessToken, 'Approved'))
     } catch (error) {
-      setApprovedError(readError(error))
+      setApprovedError(readError(error, t))
     } finally {
       setIsLoadingApproved(false)
     }
-  }, [accessToken])
+  }, [accessToken, t])
 
   const handleStatusChanged = useCallback(async (message: TransactionStatusChangedMessage) => {
     if (!accessToken) {
@@ -66,9 +69,9 @@ export function TransactionDashboard({ accessToken }: TransactionDashboardProps)
       try {
         const approvedTransaction = await getTransaction(message.transactionId, accessToken)
         setApprovedTransactions((current) => upsertApprovedTransaction(current, approvedTransaction))
-        setSubmitMessage('Transaction approved.')
+        setSubmitMessage(t('message.transactionApproved'))
       } catch (error) {
-        setApprovedError(readError(error))
+        setApprovedError(readError(error, t))
       }
 
       return
@@ -78,9 +81,13 @@ export function TransactionDashboard({ accessToken }: TransactionDashboardProps)
       setApprovedTransactions((current) =>
         current.filter((transaction) => transaction.id !== message.transactionId),
       )
-      setSubmitMessage(`Transaction rejected: ${message.decisionReason ?? 'approval rules failed'}.`)
+      setSubmitMessage(
+        interpolate(t('message.transactionRejected'), {
+          reason: translateDecisionReason(message.decisionReason, t),
+        }),
+      )
     }
-  }, [accessToken])
+  }, [accessToken, t])
 
   useEffect(() => {
     let ignore = false
@@ -101,7 +108,7 @@ export function TransactionDashboard({ accessToken }: TransactionDashboardProps)
         }
       } catch (error) {
         if (!ignore) {
-          setApprovedError(readError(error))
+          setApprovedError(readError(error, t))
         }
       } finally {
         if (!ignore) {
@@ -115,7 +122,7 @@ export function TransactionDashboard({ accessToken }: TransactionDashboardProps)
     return () => {
       ignore = true
     }
-  }, [accessToken])
+  }, [accessToken, t])
 
   useEffect(() => {
     if (!accessToken) {
@@ -177,7 +184,7 @@ export function TransactionDashboard({ accessToken }: TransactionDashboardProps)
 
   async function handleSubmit(request: CreateTransactionRequest) {
     if (!accessToken) {
-      setSubmitMessage('Login before submitting transactions.')
+      setSubmitMessage(t('message.loginBeforeSubmit'))
       return
     }
 
@@ -186,9 +193,9 @@ export function TransactionDashboard({ accessToken }: TransactionDashboardProps)
 
     try {
       const response = await createTransaction(request, accessToken)
-      setSubmitMessage(`Transaction ${shortId(response.transactionId)} submitted. Waiting for status update.`)
+      setSubmitMessage(interpolate(t('message.transactionSubmitted'), { id: shortId(response.transactionId) }))
     } catch (error) {
-      setSubmitMessage(readError(error))
+      setSubmitMessage(readError(error, t))
     } finally {
       setIsSubmitting(false)
     }
@@ -198,10 +205,10 @@ export function TransactionDashboard({ accessToken }: TransactionDashboardProps)
     <Stack spacing={3}>
       <Stack spacing={1}>
         <Typography component="h2" sx={{ fontWeight: 700 }} variant="h4">
-          Submit transaction
+          {t('dashboard.title')}
         </Typography>
         <Typography color="text.secondary">
-          Submitted instants are evaluated against local banking hours in the selected region.
+          {t('dashboard.subtitle')}
         </Typography>
       </Stack>
 
@@ -209,7 +216,7 @@ export function TransactionDashboard({ accessToken }: TransactionDashboardProps)
         <Grid size={{ xs: 12, md: 7 }}>
           {!accessToken && (
             <Alert severity="info" sx={{ mb: 2 }}>
-              Login with the development credentials to submit and view transactions.
+              {t('dashboard.authRequired')}
             </Alert>
           )}
           <TransactionForm
@@ -225,9 +232,9 @@ export function TransactionDashboard({ accessToken }: TransactionDashboardProps)
               <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
                 <ScheduleIcon color="secondary" />
                 <Box>
-                  <Typography sx={{ fontWeight: 700 }}>Banking hours</Typography>
+                  <Typography sx={{ fontWeight: 700 }}>{t('dashboard.bankingHours.title')}</Typography>
                   <Typography color="text.secondary" variant="body2">
-                    Approved from 08:00 through 17:59 local time.
+                    {t('dashboard.bankingHours.body')}
                   </Typography>
                 </Box>
               </Stack>
@@ -235,9 +242,9 @@ export function TransactionDashboard({ accessToken }: TransactionDashboardProps)
               <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
                 <PublicIcon color="primary" />
                 <Box>
-                  <Typography sx={{ fontWeight: 700 }}>Selected region decides the local time</Typography>
+                  <Typography sx={{ fontWeight: 700 }}>{t('dashboard.localTime.title')}</Typography>
                   <Typography color="text.secondary" variant="body2">
-                    The backend stores every submission and only approved transactions appear below.
+                    {t('dashboard.localTime.body')}
                   </Typography>
                 </Box>
               </Stack>
@@ -283,10 +290,26 @@ function delay(milliseconds: number) {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 }
 
-function readError(error: unknown) {
-  return error instanceof Error ? error.message : 'Unexpected error'
+function readError(error: unknown, t: ReturnType<typeof useLocalization>['t']) {
+  return error instanceof Error ? error.message : t('common.unexpectedError')
 }
 
 function shortId(id: string) {
   return `TX-${id.slice(0, 8).toUpperCase()}`
+}
+
+function translateDecisionReason(
+  reason: string | null,
+  t: ReturnType<typeof useLocalization>['t'],
+) {
+  switch (reason) {
+    case 'Within banking hours':
+      return t('decision.withinBankingHours')
+    case 'Outside banking hours':
+      return t('decision.outsideBankingHours')
+    case 'Unsupported region':
+      return t('decision.unsupportedRegion')
+    default:
+      return reason ?? t('common.unexpectedError')
+  }
 }

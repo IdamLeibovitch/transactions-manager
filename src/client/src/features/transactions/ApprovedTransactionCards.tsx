@@ -12,8 +12,9 @@ import {
   Stack,
   Typography,
 } from '@mui/material'
+import { useLocalization } from '../../app/LocalizationContext'
 import type { TransactionDto } from './transactionTypes'
-import { getRegionLabel } from './transactionTypes'
+import type { RegionCode } from './transactionTypes'
 
 type ApprovedTransactionCardsProps = {
   error: string | null
@@ -30,6 +31,8 @@ export function ApprovedTransactionCards({
   realtimeStatus,
   transactions,
 }: ApprovedTransactionCardsProps) {
+  const { locale, t } = useLocalization()
+
   return (
     <Box>
       <Stack
@@ -38,17 +41,21 @@ export function ApprovedTransactionCards({
         sx={{ alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', mb: 2 }}
       >
         <Typography component="h2" sx={{ fontWeight: 700 }} variant="h5">
-          Approved transactions
+          {t('cards.approvedTransactions')}
         </Typography>
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
           <Chip
             color={realtimeStatus === 'connected' ? 'success' : realtimeStatus === 'connecting' ? 'warning' : 'default'}
-            label={`Realtime ${realtimeStatus}`}
+            label={t(`cards.realtime.${realtimeStatus}`)}
             variant={realtimeStatus === 'connected' ? 'filled' : 'outlined'}
           />
-          <Chip color="success" icon={<CheckCircleIcon />} label={`${transactions.length} approved`} />
+          <Chip
+            color="success"
+            icon={<CheckCircleIcon />}
+            label={t('cards.approvedCount').replace('{count}', String(transactions.length))}
+          />
           <Button onClick={onRefresh} startIcon={<RefreshIcon />} variant="outlined">
-            Refresh
+            {t('cards.refresh')}
           </Button>
         </Stack>
       </Stack>
@@ -61,14 +68,14 @@ export function ApprovedTransactionCards({
 
       {isLoading ? (
         <Stack sx={{ alignItems: 'center', py: 6 }}>
-          <CircularProgress aria-label="Loading approved transactions" />
+          <CircularProgress aria-label={t('cards.loading')} />
         </Stack>
       ) : transactions.length === 0 ? (
         <Card variant="outlined">
           <CardContent>
-            <Typography sx={{ fontWeight: 700 }}>No approved transactions yet</Typography>
+            <Typography sx={{ fontWeight: 700 }}>{t('cards.emptyTitle')}</Typography>
             <Typography color="text.secondary">
-              Approved submissions will appear here after the processor finishes.
+              {t('cards.emptyBody')}
             </Typography>
           </CardContent>
         </Card>
@@ -81,22 +88,22 @@ export function ApprovedTransactionCards({
                   <Stack spacing={1.5}>
                     <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between' }}>
                       <Typography sx={{ fontWeight: 700 }}>{transaction.merchantName}</Typography>
-                      <Chip color="success" label="Approved" size="small" />
+                      <Chip color="success" label={t('common.approved')} size="small" />
                     </Stack>
                     <Typography color="text.secondary" variant="body2">
                       {shortId(transaction.id)}
                     </Typography>
                     <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between' }}>
                       <Typography>
-                        {transaction.currency} {formatAmount(transaction.amount)}
+                        {transaction.currency} {formatAmount(transaction.amount, locale)}
                       </Typography>
                       <Typography color="text.secondary">
-                        {getRegionLabel(transaction.region)} · {formatLocalTime(transaction.localSubmittedAt)}
+                        {t(getRegionKey(transaction.region))} · {formatLocalTime(transaction.localSubmittedAt, locale, t)}
                       </Typography>
                     </Stack>
                     {transaction.decisionReason && (
                       <Typography color="text.secondary" variant="body2">
-                        {transaction.decisionReason}
+                        {translateDecisionReason(transaction.decisionReason, t)}
                       </Typography>
                     )}
                   </Stack>
@@ -114,20 +121,44 @@ function shortId(id: string) {
   return `TX-${id.slice(0, 8).toUpperCase()}`
 }
 
-function formatAmount(amount: number) {
-  return new Intl.NumberFormat('en-US', {
+function formatAmount(amount: number, locale: string) {
+  return new Intl.NumberFormat(locale, {
     maximumFractionDigits: 2,
     minimumFractionDigits: 2,
   }).format(amount)
 }
 
-function formatLocalTime(localSubmittedAt: string | null) {
+function formatLocalTime(
+  localSubmittedAt: string | null,
+  locale: string,
+  t: ReturnType<typeof useLocalization>['t'],
+) {
   if (!localSubmittedAt) {
-    return 'Pending time'
+    return t('cards.pendingTime')
   }
 
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(locale, {
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(localSubmittedAt))
+}
+
+function getRegionKey(region: RegionCode) {
+  return `region.${region}` as const
+}
+
+function translateDecisionReason(
+  reason: string | null,
+  t: ReturnType<typeof useLocalization>['t'],
+) {
+  switch (reason) {
+    case 'Within banking hours':
+      return t('decision.withinBankingHours')
+    case 'Outside banking hours':
+      return t('decision.outsideBankingHours')
+    case 'Unsupported region':
+      return t('decision.unsupportedRegion')
+    default:
+      return reason
+  }
 }

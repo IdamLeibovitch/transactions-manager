@@ -14,10 +14,14 @@ import {
   Typography,
 } from '@mui/material'
 import type { ReactNode } from 'react'
+import { useLocalization } from '../../app/LocalizationContext'
+import type { Language } from '../../app/localization'
 
 type AppShellProps = {
   children: ReactNode
   isAuthenticated: boolean
+  language: Language
+  onLanguageToggle: () => void
   onLoginClick: () => void
   onLogoutClick: () => void
   username?: string
@@ -26,10 +30,14 @@ type AppShellProps = {
 export function AppShell({
   children,
   isAuthenticated,
+  language,
+  onLanguageToggle,
   onLoginClick,
   onLogoutClick,
   username,
 }: AppShellProps) {
+  const { t } = useLocalization()
+
   return (
     <Box sx={{ minHeight: '100svh', bgcolor: 'background.default' }}>
       <AppBar
@@ -49,26 +57,24 @@ export function AppShell({
             component="h1"
             sx={{ flexGrow: 1, fontSize: { xs: 18, sm: 20 }, fontWeight: 700 }}
           >
-            Transaction Approval Simulator
+            {t('app.title')}
           </Typography>
           <Stack direction="row" spacing={1}>
-            <Tooltip title="Notifications">
-              <IconButton aria-label="Notifications">
+            <Tooltip title={t('common.notifications')}>
+              <IconButton aria-label={t('common.notifications')}>
                 <NotificationsIcon />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Language">
-              <IconButton aria-label="Language">
-                <TranslateIcon />
-              </IconButton>
-            </Tooltip>
+            <Button onClick={onLanguageToggle} startIcon={<TranslateIcon />} variant="text">
+              {language === 'en' ? 'עברית' : 'English'}
+            </Button>
             {isAuthenticated ? (
               <Button onClick={onLogoutClick} startIcon={<LogoutIcon />} variant="outlined">
-                {username ?? 'Logout'}
+                {username ?? t('auth.logout')}
               </Button>
             ) : (
               <Button onClick={onLoginClick} startIcon={<LoginIcon />} variant="contained">
-                Login
+                {t('auth.login')}
               </Button>
             )}
           </Stack>

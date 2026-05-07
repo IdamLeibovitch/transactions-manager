@@ -36,13 +36,9 @@ export type TransactionStatusChangedMessage = {
   processedAtUtc: string | null
 }
 
-export const regions: Array<{ code: RegionCode; label: string }> = [
-  { code: 'IL', label: 'Israel' },
-  { code: 'US_EAST', label: 'US East' },
-  { code: 'UK', label: 'United Kingdom' },
-  { code: 'EU_CENTRAL', label: 'EU Central' },
+export const regions: Array<{ code: RegionCode; translationKey: `region.${RegionCode}` }> = [
+  { code: 'IL', translationKey: 'region.IL' },
+  { code: 'US_EAST', translationKey: 'region.US_EAST' },
+  { code: 'UK', translationKey: 'region.UK' },
+  { code: 'EU_CENTRAL', translationKey: 'region.EU_CENTRAL' },
 ]
-
-export function getRegionLabel(region: RegionCode) {
-  return regions.find((item) => item.code === region)?.label ?? region
-}
