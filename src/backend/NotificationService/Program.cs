@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using TransactionsManager.NotificationService.Consumers;
 using TransactionsManager.NotificationService.Hubs;
 using TransactionsManager.NotificationService.Messaging;
@@ -7,7 +8,9 @@ var builder = WebApplication.CreateBuilder(args);
 const string clientCorsPolicy = "client";
 
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMq"));
-builder.Services.AddSignalR();
+builder.Services.AddSignalR()
+    .AddJsonProtocol(options =>
+        options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddHostedService<TransactionProcessedNotificationConsumer>();
 builder.Services.AddCors(options =>
 {

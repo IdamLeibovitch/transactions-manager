@@ -19,6 +19,7 @@ type ApprovedTransactionCardsProps = {
   error: string | null
   isLoading: boolean
   onRefresh: () => void
+  realtimeStatus: 'connected' | 'connecting' | 'disconnected'
   transactions: TransactionDto[]
 }
 
@@ -26,6 +27,7 @@ export function ApprovedTransactionCards({
   error,
   isLoading,
   onRefresh,
+  realtimeStatus,
   transactions,
 }: ApprovedTransactionCardsProps) {
   return (
@@ -39,6 +41,11 @@ export function ApprovedTransactionCards({
           Approved transactions
         </Typography>
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <Chip
+            color={realtimeStatus === 'connected' ? 'success' : realtimeStatus === 'connecting' ? 'warning' : 'default'}
+            label={`Realtime ${realtimeStatus}`}
+            variant={realtimeStatus === 'connected' ? 'filled' : 'outlined'}
+          />
           <Chip color="success" icon={<CheckCircleIcon />} label={`${transactions.length} approved`} />
           <Button onClick={onRefresh} startIcon={<RefreshIcon />} variant="outlined">
             Refresh

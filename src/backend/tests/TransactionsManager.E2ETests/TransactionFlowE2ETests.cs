@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.DependencyInjection;
 using TransactionsManager.Contracts.Api.Notifications;
 using TransactionsManager.Contracts.Api.Transactions;
 using TransactionsManager.Contracts.Messaging;
@@ -91,6 +92,8 @@ public sealed class TransactionFlowE2ETests : IAsyncLifetime
         hubConnection = new HubConnectionBuilder()
             .WithUrl(NotificationHubUrl)
             .WithAutomaticReconnect()
+            .AddJsonProtocol(options =>
+                options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
             .Build();
 
         hubConnection.On<TransactionStatusChangedMessage>("transactionStatusChanged", signalRUpdates.Add);

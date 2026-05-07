@@ -29,6 +29,13 @@ export type TransactionDto = {
   processedAtUtc: string | null
 }
 
+export type TransactionStatusChangedMessage = {
+  transactionId: string
+  status: TransactionStatus
+  decisionReason: string | null
+  processedAtUtc: string | null
+}
+
 export const regions: Array<{ code: RegionCode; label: string }> = [
   { code: 'IL', label: 'Israel' },
   { code: 'US_EAST', label: 'US East' },

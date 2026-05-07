@@ -13,16 +13,22 @@ import {
 import { useCallback, useEffect, useState } from 'react'
 import { ApprovedTransactionCards } from './ApprovedTransactionCards'
 import { TransactionForm } from './TransactionForm'
-import type { CreateTransactionRequest, TransactionDto } from './transactionTypes'
+import type {
+  CreateTransactionRequest,
+  TransactionDto,
+  TransactionStatusChangedMessage,
+} from './transactionTypes'
 import { createTransaction, getTransaction, listTransactions } from './transactionsApi'
+import { createTransactionsHubConnection } from './transactionsHub'
 
-const processedStatusCheckLimit = 16
+type RealtimeStatus = 'connected' | 'connecting' | 'disconnected'
 
 export function TransactionDashboard() {
   const [approvedTransactions, setApprovedTransactions] = useState<TransactionDto[]>([])
   const [isLoadingApproved, setIsLoadingApproved] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [approvedError, setApprovedError] = useState<string | null>(null)
+  const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>('connecting')
   const [submitMessage, setSubmitMessage] = useState<string | null>(null)
 
   const loadApprovedTransactions = useCallback(async () => {
@@ -35,6 +41,27 @@ export function TransactionDashboard() {
       setApprovedError(readError(error))
     } finally {
       setIsLoadingApproved(false)
+    }
+  }, [])
+
+  const handleStatusChanged = useCallback(async (message: TransactionStatusChangedMessage) => {
+    if (message.status === 'Approved') {
+      try {
+        const approvedTransaction = await getTransaction(message.transactionId)
+        setApprovedTransactions((current) => upsertApprovedTransaction(current, approvedTransaction))
+        setSubmitMessage('Transaction approved.')
+      } catch (error) {
+        setApprovedError(readError(error))
+      }
+
+      return
+    }
+
+    if (message.status === 'Rejected') {
+      setApprovedTransactions((current) =>
+        current.filter((transaction) => transaction.id !== message.transactionId),
+      )
+      setSubmitMessage(`Transaction rejected: ${message.decisionReason ?? 'approval rules failed'}.`)
     }
   }, [])
 
@@ -66,23 +93,66 @@ export function TransactionDashboard() {
     }
   }, [])
 
+  useEffect(() => {
+    let disposed = false
+
+    const connection = createTransactionsHubConnection({
+      onClose: () => {
+        if (!disposed) {
+          setRealtimeStatus('disconnected')
+        }
+      },
+      onReconnected: () => {
+        if (!disposed) {
+          setRealtimeStatus('connected')
+        }
+      },
+      onReconnecting: () => {
+        if (!disposed) {
+          setRealtimeStatus('connecting')
+        }
+      },
+      onStatusChanged: (message) => {
+        void handleStatusChanged(message)
+      },
+    })
+
+    async function startConnection() {
+      while (!disposed) {
+        try {
+          setRealtimeStatus('connecting')
+          await connection.start()
+
+          if (!disposed) {
+            setRealtimeStatus('connected')
+          }
+
+          return
+        } catch {
+          if (!disposed) {
+            setRealtimeStatus('disconnected')
+          }
+
+          await delay(2000)
+        }
+      }
+    }
+
+    void startConnection()
+
+    return () => {
+      disposed = true
+      void connection.stop()
+    }
+  }, [handleStatusChanged])
+
   async function handleSubmit(request: CreateTransactionRequest) {
     setIsSubmitting(true)
     setSubmitMessage(null)
 
     try {
       const response = await createTransaction(request)
-      const processedTransaction = await waitForProcessedTransaction(response.transactionId)
-
-      if (processedTransaction?.status === 'Approved') {
-        setSubmitMessage('Transaction approved.')
-      } else if (processedTransaction?.status === 'Rejected') {
-        setSubmitMessage(`Transaction rejected: ${processedTransaction.decisionReason ?? 'approval rules failed'}.`)
-      } else {
-        setSubmitMessage('Transaction submitted and is still pending.')
-      }
-
-      await loadApprovedTransactions()
+      setSubmitMessage(`Transaction ${shortId(response.transactionId)} submitted. Waiting for status update.`)
     } catch (error) {
       setSubmitMessage(readError(error))
     } finally {
@@ -137,6 +207,7 @@ export function TransactionDashboard() {
         error={approvedError}
         isLoading={isLoadingApproved}
         onRefresh={loadApprovedTransactions}
+        realtimeStatus={realtimeStatus}
         transactions={approvedTransactions}
       />
 
@@ -153,18 +224,16 @@ export function TransactionDashboard() {
   )
 }
 
-async function waitForProcessedTransaction(transactionId: string) {
-  for (let attempt = 0; attempt < processedStatusCheckLimit; attempt += 1) {
-    const transaction = await getTransaction(transactionId)
-
-    if (transaction.status !== 'Pending') {
-      return transaction
-    }
-
-    await delay(750)
+function upsertApprovedTransaction(current: TransactionDto[], transaction: TransactionDto) {
+  if (transaction.status !== 'Approved') {
+    return current.filter((item) => item.id !== transaction.id)
   }
 
-  return null
+  const withoutUpdated = current.filter((item) => item.id !== transaction.id)
+
+  return [transaction, ...withoutUpdated].sort((left, right) =>
+    right.createdAtUtc.localeCompare(left.createdAtUtc),
+  )
 }
 
 function delay(milliseconds: number) {
@@ -173,4 +242,8 @@ function delay(milliseconds: number) {
 
 function readError(error: unknown) {
   return error instanceof Error ? error.message : 'Unexpected error'
+}
+
+function shortId(id: string) {
+  return `TX-${id.slice(0, 8).toUpperCase()}`
 }
