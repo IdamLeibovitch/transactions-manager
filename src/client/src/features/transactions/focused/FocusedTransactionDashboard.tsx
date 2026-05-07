@@ -7,9 +7,9 @@ import {
   Stack,
   Typography,
 } from '@mui/material'
-import { useEffect, useState } from 'react'
 import { useLocalization } from '../../../app/LocalizationContext'
 import type { CreateTransactionRequest, TransactionDto } from '../transactionTypes'
+import { FocusedMarketingImages } from './FocusedMarketingImages'
 import { FocusedTransactionForm } from './FocusedTransactionForm'
 import { FocusedTransactionsViewer } from './FocusedTransactionsViewer'
 
@@ -23,14 +23,6 @@ type FocusedTransactionDashboardProps = {
   onSubmitMessageClose: () => void
   submitMessage: string | null
 }
-
-const marketingImages = [
-  'https://www.shva.co.il/wp-content/uploads/2023/03/canon-might-be-animated.png',
-  'https://www.shva.co.il/wp-content/uploads/2023/06/ashrait.png',
-  'https://www.shva.co.il/wp-content/uploads/2023/06/%D7%94%D7%95%D7%A8%D7%90%D7%AA.png',
-  'https://www.shva.co.il/wp-content/uploads/2023/06/top.png',
-  'https://www.shva.co.il/wp-content/uploads/2023/06/clp.png',
-]
 
 export function FocusedTransactionDashboard({
   accessToken,
@@ -80,15 +72,6 @@ export function FocusedTransactionDashboard({
 
 function FocusedMarketingPanel() {
   const { t } = useLocalization()
-  const [imageIndex, setImageIndex] = useState(0)
-
-  useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      setImageIndex((current) => (current + 1) % marketingImages.length)
-    }, 3500)
-
-    return () => window.clearInterval(intervalId)
-  }, [])
 
   return (
     <Paper
@@ -158,33 +141,7 @@ function FocusedMarketingPanel() {
             </Stack>
           </Grid>
           <Grid size={{ lg: 5 }} sx={{ display: { xs: 'none', lg: 'block' } }}>
-            <Box
-              sx={{
-                height: 280,
-                position: 'relative',
-                width: '100%',
-              }}
-            >
-              {marketingImages.map((image, index) => (
-                <Box
-                  alt=""
-                  component="img"
-                  key={image}
-                  src={image}
-                  sx={{
-                    display: 'block',
-                    inset: 0,
-                    maxHeight: 280,
-                    maxWidth: '100%',
-                    objectFit: 'contain',
-                    opacity: index === imageIndex ? 1 : 0,
-                    position: 'absolute',
-                    transition: 'opacity 650ms ease-in-out',
-                    width: '100%',
-                  }}
-                />
-              ))}
-            </Box>
+            <FocusedMarketingImages />
           </Grid>
         </Grid>
       </Stack>
