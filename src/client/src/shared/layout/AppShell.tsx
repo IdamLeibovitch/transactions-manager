@@ -66,7 +66,7 @@ export function AppShell({
   }
 
   return (
-    <Box sx={{ minHeight: '100svh', bgcolor: 'background.default' }}>
+    <Box sx={{ bgcolor: 'background.default', display: 'flex', flexDirection: 'column', minHeight: '100svh' }}>
       <AppBar
         color="inherit"
         elevation={0}
@@ -158,7 +158,16 @@ export function AppShell({
         </Toolbar>
       </AppBar>
 
-      <Container component="main" maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
+      <Container
+        component="main"
+        maxWidth="lg"
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          flexGrow: 1,
+          py: { xs: 3, md: 5 },
+        }}
+      >
         {children}
       </Container>
     </Box>
