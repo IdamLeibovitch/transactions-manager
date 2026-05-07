@@ -341,14 +341,48 @@ function FocusedMarketingPanel() {
     >
       <Grid container spacing={3} sx={{ alignItems: 'center', height: '100%' }}>
         <Grid size={{ xs: 12, lg: 7 }}>
-          <Stack spacing={2}>
-            <Typography color="primary" sx={{ fontWeight: 700 }}>
-              {t('marketing.eyebrow')}
-            </Typography>
+          <Stack spacing={3}>
+            <Stack spacing={2} sx={{ alignItems: 'center', textAlign: 'center' }}>
+              <Box
+                sx={{
+                  bgcolor: '#ffffff',
+                  border: 1,
+                  borderColor: '#d8d8d8',
+                  borderRadius: 2,
+                  boxShadow: '0 2px 0 rgba(0, 0, 0, 0.22)',
+                  px: { xs: 2.5, sm: 4 },
+                  py: 0.75,
+                }}
+              >
+                <Typography
+                  sx={{
+                    color: '#3d3d3f',
+                    fontSize: { xs: 20, sm: 32 },
+                    fontWeight: 800,
+                    lineHeight: 1.25,
+                    textTransform: 'uppercase',
+                  }}
+                  variant="h2"
+                >
+                  TRANSACTION SIMULATOR
+                </Typography>
+              </Box>
+              <Typography
+                sx={{
+                  color: '#3a3a3d',
+                  fontSize: { xs: 26, sm: 44 },
+                  fontWeight: 800,
+                  lineHeight: 1.2,
+                }}
+                variant="h2"
+              >
+                Will this transaction be approved?
+              </Typography>
+            </Stack>
             <Typography
               component="h1"
               sx={{
-                color: 'text.primary',
+                color: 'primary.main',
                 fontSize: { xs: 32, md: 44 },
                 fontWeight: 800,
                 lineHeight: 1.12,
