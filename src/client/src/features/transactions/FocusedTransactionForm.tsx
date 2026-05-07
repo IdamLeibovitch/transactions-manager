@@ -11,12 +11,10 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
-import { LocalizationProvider as DatePickerLocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
-import { StaticTimePicker } from '@mui/x-date-pickers/StaticTimePicker'
 import type { Dayjs } from 'dayjs'
 import { useId, useMemo, useRef, useState, type KeyboardEvent, type Ref } from 'react'
 import { useLocalization } from '../../app/LocalizationContext'
+import { StaticTransactionTimePicker } from './StaticTransactionTimePicker'
 import type { CreateTransactionRequest, RegionCode } from './transactionTypes'
 import { regions } from './transactionTypes'
 import {
@@ -262,72 +260,7 @@ export function FocusedTransactionForm({
                   </Stack>
                 </Stack>
               ) : (
-                <Box
-                  sx={{
-                    '& .MuiClock-clock': {
-                      bgcolor: 'rgba(65, 36, 126, 0.07)',
-                    },
-                    '& .MuiDialogActions-root': {
-                      display: 'none',
-                    },
-                    '& .MuiPickersLayout-root': {
-                      bgcolor: 'transparent',
-                      display: 'block',
-                      minWidth: 0,
-                    },
-                    '& .MuiPickersLayout-contentWrapper': {
-                      alignItems: 'center',
-                      display: 'flex',
-                      justifyContent: 'center',
-                    },
-                    '& .MuiPickersToolbar-content': {
-                      justifyContent: 'center',
-                    },
-                    '& .MuiPickersToolbar-root': {
-                      maxWidth: 260,
-                      mx: 'auto',
-                      pb: 0,
-                      pt: 0,
-                    },
-                    '& .MuiPickersToolbar-title': {
-                      display: 'none',
-                    },
-                    '& .MuiTimeClock-arrowSwitcher': {
-                      right: { xs: 24, sm: 32 },
-                      top: 4,
-                    },
-                    '& .MuiTimeClock-root': {
-                      height: 232,
-                      maxHeight: 232,
-                      mx: 'auto',
-                      overflow: 'hidden',
-                      width: 280,
-                    },
-                    '& .MuiTimeClock-root .MuiClock-root': {
-                      margin: '0 auto',
-                    },
-                    '& .MuiTypography-overline': {
-                      color: 'text.secondary',
-                      fontSize: 11,
-                      lineHeight: 1.2,
-                      mb: 0.5,
-                    },
-                  }}
-                >
-                  <DatePickerLocalizationProvider dateAdapter={AdapterDayjs}>
-                    <StaticTimePicker
-                      ampm={false}
-                      onChange={handlePickerChange}
-                      orientation="portrait"
-                      slotProps={{
-                        actionBar: {
-                          actions: [],
-                        },
-                      }}
-                      value={timePickerValue}
-                    />
-                  </DatePickerLocalizationProvider>
-                </Box>
+                <StaticTransactionTimePicker onChange={handlePickerChange} value={timePickerValue} />
               )}
 
               <Stack
