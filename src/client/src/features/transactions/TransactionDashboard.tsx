@@ -23,11 +23,12 @@ import type {
   TransactionStatusChangedMessage,
 } from './transactionTypes'
 import type { TransactionViewMode } from './transactionViewTypes'
-import { createTransaction, getTransaction, listTransactions } from './transactionsApi'
+import { createTransaction, getTransaction, listTransactions, UnauthorizedError } from './transactionsApi'
 import { createTransactionsHubConnection } from './transactionsHub'
 
 type TransactionDashboardProps = {
   accessToken: string | null
+  onUnauthorized: () => void
   viewMode: TransactionViewMode
 }
 
@@ -39,7 +40,7 @@ const marketingImages = [
   'https://www.shva.co.il/wp-content/uploads/2023/06/clp.png',
 ]
 
-export function TransactionDashboard({ accessToken, viewMode }: TransactionDashboardProps) {
+export function TransactionDashboard({ accessToken, onUnauthorized, viewMode }: TransactionDashboardProps) {
   const { t } = useLocalization()
   const [approvedTransactions, setApprovedTransactions] = useState<TransactionDto[]>([])
   const [isLoadingApproved, setIsLoadingApproved] = useState(Boolean(accessToken))
@@ -62,11 +63,11 @@ export function TransactionDashboard({ accessToken, viewMode }: TransactionDashb
     try {
       setApprovedTransactions(await listTransactions(accessToken, 'Approved'))
     } catch (error) {
-      setApprovedError(readError(error, t))
+      handleApiError(error, onUnauthorized, (message) => setApprovedError(message), t)
     } finally {
       setIsLoadingApproved(false)
     }
-  }, [accessToken, t])
+  }, [accessToken, onUnauthorized, t])
 
   const handleStatusChanged = useCallback(async (message: TransactionStatusChangedMessage) => {
     if (!accessToken) {
@@ -80,7 +81,7 @@ export function TransactionDashboard({ accessToken, viewMode }: TransactionDashb
         setApprovedTransactions((current) => upsertApprovedTransaction(current, approvedTransaction))
         setSubmitMessage(t('message.transactionApproved'))
       } catch (error) {
-        setApprovedError(readError(error, t))
+        handleApiError(error, onUnauthorized, (message) => setApprovedError(message), t)
       }
 
       return
@@ -96,7 +97,7 @@ export function TransactionDashboard({ accessToken, viewMode }: TransactionDashb
         }),
       )
     }
-  }, [accessToken, t])
+  }, [accessToken, onUnauthorized, t])
 
   useEffect(() => {
     let ignore = false
@@ -117,7 +118,7 @@ export function TransactionDashboard({ accessToken, viewMode }: TransactionDashb
         }
       } catch (error) {
         if (!ignore) {
-          setApprovedError(readError(error, t))
+          handleApiError(error, onUnauthorized, (message) => setApprovedError(message), t)
         }
       } finally {
         if (!ignore) {
@@ -131,7 +132,7 @@ export function TransactionDashboard({ accessToken, viewMode }: TransactionDashb
     return () => {
       ignore = true
     }
-  }, [accessToken, t])
+  }, [accessToken, onUnauthorized, t])
 
   useEffect(() => {
     if (!accessToken) {
@@ -172,7 +173,12 @@ export function TransactionDashboard({ accessToken, viewMode }: TransactionDashb
           }
 
           return
-        } catch {
+        } catch (error) {
+          if (isUnauthorizedConnectionError(error)) {
+            onUnauthorized()
+            return
+          }
+
           if (!disposed) {
             setIsRealtimeConnected(false)
           }
@@ -188,7 +194,7 @@ export function TransactionDashboard({ accessToken, viewMode }: TransactionDashb
       disposed = true
       void connection.stop()
     }
-  }, [accessToken, handleStatusChanged])
+  }, [accessToken, handleStatusChanged, onUnauthorized])
 
   async function handleSubmit(request: CreateTransactionRequest) {
     if (!accessToken) {
@@ -203,7 +209,7 @@ export function TransactionDashboard({ accessToken, viewMode }: TransactionDashb
       const response = await createTransaction(request, accessToken)
       setSubmitMessage(interpolate(t('message.transactionSubmitted'), { id: shortId(response.transactionId) }))
     } catch (error) {
-      setSubmitMessage(readError(error, t))
+      handleApiError(error, onUnauthorized, (message) => setSubmitMessage(message), t)
     } finally {
       setIsSubmitting(false)
     }
@@ -445,6 +451,24 @@ function delay(milliseconds: number) {
 
 function readError(error: unknown, t: ReturnType<typeof useLocalization>['t']) {
   return error instanceof Error ? error.message : t('common.unexpectedError')
+}
+
+function handleApiError(
+  error: unknown,
+  onUnauthorized: () => void,
+  onOtherError: (message: string) => void,
+  t: ReturnType<typeof useLocalization>['t'],
+) {
+  if (error instanceof UnauthorizedError) {
+    onUnauthorized()
+    return
+  }
+
+  onOtherError(readError(error, t))
+}
+
+function isUnauthorizedConnectionError(error: unknown) {
+  return error instanceof Error && /(?:401|Unauthorized)/i.test(error.message)
 }
 
 function shortId(id: string) {

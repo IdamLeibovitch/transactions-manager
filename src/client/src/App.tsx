@@ -1,11 +1,12 @@
 import { CacheProvider } from '@emotion/react'
 import { CssBaseline, ThemeProvider } from '@mui/material'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createEmotionCache } from './app/createEmotionCache'
 import { LocalizationProvider } from './app/LocalizationProvider'
 import { getTextDirection, type Language } from './app/localization'
 import { createAppTheme } from './app/theme'
 import { LoginScreen } from './features/auth/LoginScreen'
+import { getMillisecondsUntilSessionExpiration, isAuthSession, isSessionExpired } from './features/auth/authSession'
 import type { AuthSession } from './features/auth/authTypes'
 import { TransactionDashboard } from './features/transactions/TransactionDashboard'
 import type { TransactionViewMode } from './features/transactions/transactionViewTypes'
@@ -34,10 +35,20 @@ function App() {
     setAuthSession(session)
   }
 
-  function handleLogout() {
+  const handleLogout = useCallback(() => {
     window.localStorage.removeItem(authStorageKey)
     setAuthSession(null)
-  }
+  }, [])
+
+  useEffect(() => {
+    if (!authSession) {
+      return undefined
+    }
+
+    const timeoutId = window.setTimeout(handleLogout, getMillisecondsUntilSessionExpiration(authSession))
+
+    return () => window.clearTimeout(timeoutId)
+  }, [authSession, handleLogout])
 
   function handleLanguageChange(nextLanguage: Language) {
     window.localStorage.setItem(languageStorageKey, nextLanguage)
@@ -67,6 +78,7 @@ function App() {
               <TransactionDashboard
                 accessToken={authSession.accessToken}
                 key={authSession.accessToken}
+                onUnauthorized={handleLogout}
                 viewMode={viewMode}
               />
             ) : (
@@ -89,7 +101,14 @@ function readStoredSession() {
   }
 
   try {
-    return JSON.parse(storedValue) as AuthSession
+    const session = JSON.parse(storedValue) as unknown
+
+    if (!isAuthSession(session) || isSessionExpired(session)) {
+      window.localStorage.removeItem(authStorageKey)
+      return null
+    }
+
+    return session
   } catch {
     window.localStorage.removeItem(authStorageKey)
     return null

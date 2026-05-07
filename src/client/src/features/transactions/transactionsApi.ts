@@ -7,6 +7,13 @@ import type {
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5080'
 
+export class UnauthorizedError extends Error {
+  constructor() {
+    super('Unauthorized')
+    this.name = 'UnauthorizedError'
+  }
+}
+
 export async function createTransaction(request: CreateTransactionRequest, accessToken: string) {
   return sendJson<CreateTransactionResponse>('/api/transactions', {
     method: 'POST',
@@ -36,6 +43,10 @@ async function sendJson<T>(path: string, init?: RequestInit, accessToken?: strin
   })
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new UnauthorizedError()
+    }
+
     throw new Error(await readErrorMessage(response))
   }
 
