@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using TransactionsManager.Contracts.Api.Transactions;
 using TransactionsManager.Contracts.Transactions;
+using TransactionsManager.GatewayApi.Filters;
 using TransactionsManager.GatewayApi.Services;
 
 namespace TransactionsManager.GatewayApi.Controllers;
 
 [ApiController]
+[ValidateModel]
 [Route("api/transactions")]
 public sealed class TransactionsController(ITransactionService transactionService) : ControllerBase
 {
@@ -14,14 +16,7 @@ public sealed class TransactionsController(ITransactionService transactionServic
         CreateTransactionRequest request,
         CancellationToken cancellationToken)
     {
-        CreateTransactionResult result = await transactionService.CreateAsync(request, cancellationToken);
-
-        if (!result.IsValid)
-        {
-            return ValidationProblem(new ValidationProblemDetails(result.ValidationErrors!));
-        }
-
-        return Accepted(result.Response);
+        return Accepted(await transactionService.CreateAsync(request, cancellationToken));
     }
 
     [HttpGet]

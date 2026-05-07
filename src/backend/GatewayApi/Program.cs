@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 using System.Text.Json.Serialization;
 using TransactionsManager.GatewayApi.Data;
 using TransactionsManager.GatewayApi.Messaging;
@@ -16,6 +17,8 @@ builder.Services.AddDbContext<GatewayDbContext>(options =>
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+    options.SuppressModelStateInvalidFilter = true);
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
