@@ -11,35 +11,16 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
-import type { Dayjs } from 'dayjs'
-import { useId, useMemo, useRef, useState, type KeyboardEvent, type Ref } from 'react'
+import { useId, useRef, type KeyboardEvent, type Ref } from 'react'
 import { useLocalization } from '../../../app/LocalizationContext'
+import type { CreateTransactionRequest } from '../transactionTypes'
 import { StaticTransactionTimePicker } from './StaticTransactionTimePicker'
-import type { CreateTransactionRequest, RegionCode } from '../transactionTypes'
-import { regions } from '../transactionTypes'
-import {
-  formatTimeInputValue,
-  isValidHour,
-  isValidMinute,
-  isValidTime,
-  toDayjsTime,
-  toTimeParts,
-  toTimeString,
-  toUtcIsoStringForTimeZone,
-  wrapNumber,
-  type TimeParts,
-} from '../utils/timeUtils'
+import { useFocusedTransactionForm } from './useFocusedTransactionForm'
 
 type FocusedTransactionFormProps = {
   isDisabled?: boolean
   isSubmitting: boolean
   onSubmit: (request: CreateTransactionRequest) => Promise<void>
-}
-
-type TimeZoneOption = {
-  code: RegionCode
-  label: string
-  timeZone: string
 }
 
 export function FocusedTransactionForm({
@@ -48,112 +29,29 @@ export function FocusedTransactionForm({
   onSubmit,
 }: FocusedTransactionFormProps) {
   const { direction, t } = useLocalization()
-  const timeZoneOptions = useMemo(
-    () =>
-      regions.map((region) => ({
-        code: region.code,
-        label: t(region.translationKey),
-        timeZone: region.timeZone,
-      })),
-    [t],
-  )
-  const [selectedRegionCode, setSelectedRegionCode] = useState<RegionCode>('IL')
-  const selectedTimeZone = timeZoneOptions.find((option) => option.code === selectedRegionCode) ?? timeZoneOptions[0]
-  const [submittedTime, setSubmittedTime] = useState<TimeParts>(() =>
-    toTimeParts(formatTimeInputValue(new Date(), timeZoneOptions[0].timeZone)),
-  )
-  const [timeEntryMode, setTimeEntryMode] = useState<'text' | 'picker'>('text')
-  const [submitted, setSubmitted] = useState(false)
+  const {
+    errors,
+    handlePickerChange,
+    handleSubmit,
+    handleTimePartBlur,
+    handleTimePartBoundary,
+    handleTimePartChange,
+    handleTimePartStep,
+    handleTimeZoneChange,
+    isSubmitted,
+    selectedTimeZone,
+    setTimeEntryMode,
+    submittedTime,
+    timeEntryMode,
+    timePickerValue,
+    timeZoneOptions,
+  } = useFocusedTransactionForm({ onSubmit })
   const hourInputRef = useRef<HTMLInputElement | null>(null)
   const minuteInputRef = useRef<HTMLInputElement | null>(null)
   const timeGroupLabelId = useId()
   const timeHelperId = useId()
   const timeKeyboardHelpId = useId()
   const timeDescriptionIds = `${timeHelperId} ${timeKeyboardHelpId}`
-
-  const isTimeInvalid = !isValidTime(submittedTime)
-  const timePickerValue = toDayjsTime(submittedTime)
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setSubmitted(true)
-
-    if (isTimeInvalid) {
-      return
-    }
-
-    await onSubmit({
-      amount: 125.5,
-      currency: 'ILS',
-      merchantName: 'Terminal 42',
-      region: selectedTimeZone.code,
-      submittedAt: toUtcIsoStringForTimeZone(toTimeString(submittedTime), selectedTimeZone.timeZone),
-    })
-  }
-
-  function handleTimeZoneChange(option: TimeZoneOption | null) {
-    if (!option) {
-      return
-    }
-
-    setSelectedRegionCode(option.code)
-    setSubmittedTime(toTimeParts(formatTimeInputValue(new Date(), option.timeZone)))
-  }
-
-  function handleTimePartChange(part: keyof TimeParts, value: string) {
-    const digitsOnly = value.replace(/\D/g, '').slice(0, 2)
-
-    setSubmittedTime((current) => ({
-      ...current,
-      [part]: digitsOnly,
-    }))
-
-    if (part === 'hour' && digitsOnly.length === 2) {
-      window.setTimeout(() => minuteInputRef.current?.focus(), 0)
-    }
-  }
-
-  function handleTimePartStep(part: keyof TimeParts, step: number) {
-    const currentValue = Number(submittedTime[part])
-    const current = Number.isFinite(currentValue) ? currentValue : 0
-    const max = part === 'hour' ? 23 : 59
-    const next = wrapNumber(current + step, 0, max)
-
-    setSubmittedTime((value) => ({
-      ...value,
-      [part]: String(next).padStart(2, '0'),
-    }))
-  }
-
-  function handleTimePartBoundary(part: keyof TimeParts, boundary: 'min' | 'max') {
-    setSubmittedTime((value) => ({
-      ...value,
-      [part]: boundary === 'min' ? '00' : part === 'hour' ? '23' : '59',
-    }))
-  }
-
-  function handleTimePartBlur(part: keyof TimeParts) {
-    const value = submittedTime[part]
-
-    if (part === 'hour' && isValidHour(value)) {
-      setSubmittedTime((current) => ({ ...current, hour: value.padStart(2, '0') }))
-    }
-
-    if (part === 'minute' && isValidMinute(value)) {
-      setSubmittedTime((current) => ({ ...current, minute: value.padStart(2, '0') }))
-    }
-  }
-
-  function handlePickerChange(value: Dayjs | null) {
-    if (!value) {
-      return
-    }
-
-    setSubmittedTime({
-      hour: String(value.hour()).padStart(2, '0'),
-      minute: String(value.minute()).padStart(2, '0'),
-    })
-  }
 
   return (
     <Paper
@@ -212,17 +110,20 @@ export function FocusedTransactionForm({
                     direction="row"
                     role="group"
                     spacing={{ xs: 1.5, sm: 2 }}
-                    sx={{ alignItems: 'flex-start', direction: 'ltr' }}
+                    useFlexGap
+                    sx={{ alignItems: 'flex-start', direction: 'ltr /* @noflip */' }}
                   >
                     <TimePartInput
                       ariaLabel={t('form.hour')}
                       describedBy={timeDescriptionIds}
                       disabled={isDisabled || isSubmitting}
-                      error={submitted && !isValidHour(submittedTime.hour)}
+                      error={isSubmitted && Boolean(errors.hour)}
                       inputRef={hourInputRef}
                       label={t('form.hour')}
                       max={23}
-                      onChange={(value) => handleTimePartChange('hour', value)}
+                      onChange={(value) =>
+                        handleTimePartChange('hour', value, () => minuteInputRef.current?.focus())
+                      }
                       onMax={() => handleTimePartBoundary('hour', 'max')}
                       onMin={() => handleTimePartBoundary('hour', 'min')}
                       onMoveNext={() => minuteInputRef.current?.focus()}
@@ -245,7 +146,7 @@ export function FocusedTransactionForm({
                       ariaLabel={t('form.minute')}
                       describedBy={timeDescriptionIds}
                       disabled={isDisabled || isSubmitting}
-                      error={submitted && !isValidMinute(submittedTime.minute)}
+                      error={isSubmitted && Boolean(errors.minute)}
                       inputRef={minuteInputRef}
                       label={t('form.minute')}
                       max={59}
