@@ -23,31 +23,48 @@ import { createTransactionsHubConnection } from './transactionsHub'
 
 type RealtimeStatus = 'connected' | 'connecting' | 'disconnected'
 
-export function TransactionDashboard() {
+type TransactionDashboardProps = {
+  accessToken: string | null
+}
+
+export function TransactionDashboard({ accessToken }: TransactionDashboardProps) {
   const [approvedTransactions, setApprovedTransactions] = useState<TransactionDto[]>([])
-  const [isLoadingApproved, setIsLoadingApproved] = useState(true)
+  const [isLoadingApproved, setIsLoadingApproved] = useState(Boolean(accessToken))
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [approvedError, setApprovedError] = useState<string | null>(null)
-  const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>('connecting')
+  const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>(
+    accessToken ? 'connecting' : 'disconnected',
+  )
   const [submitMessage, setSubmitMessage] = useState<string | null>(null)
 
   const loadApprovedTransactions = useCallback(async () => {
+    if (!accessToken) {
+      setApprovedTransactions([])
+      setIsLoadingApproved(false)
+      setApprovedError(null)
+      return
+    }
+
     setApprovedError(null)
     setIsLoadingApproved(true)
 
     try {
-      setApprovedTransactions(await listTransactions('Approved'))
+      setApprovedTransactions(await listTransactions(accessToken, 'Approved'))
     } catch (error) {
       setApprovedError(readError(error))
     } finally {
       setIsLoadingApproved(false)
     }
-  }, [])
+  }, [accessToken])
 
   const handleStatusChanged = useCallback(async (message: TransactionStatusChangedMessage) => {
+    if (!accessToken) {
+      return
+    }
+
     if (message.status === 'Approved') {
       try {
-        const approvedTransaction = await getTransaction(message.transactionId)
+        const approvedTransaction = await getTransaction(message.transactionId, accessToken)
         setApprovedTransactions((current) => upsertApprovedTransaction(current, approvedTransaction))
         setSubmitMessage('Transaction approved.')
       } catch (error) {
@@ -63,14 +80,21 @@ export function TransactionDashboard() {
       )
       setSubmitMessage(`Transaction rejected: ${message.decisionReason ?? 'approval rules failed'}.`)
     }
-  }, [])
+  }, [accessToken])
 
   useEffect(() => {
     let ignore = false
 
     async function loadInitialApprovedTransactions() {
+      if (!accessToken) {
+        setApprovedTransactions([])
+        setIsLoadingApproved(false)
+        setApprovedError(null)
+        return
+      }
+
       try {
-        const transactions = await listTransactions('Approved')
+        const transactions = await listTransactions(accessToken, 'Approved')
 
         if (!ignore) {
           setApprovedTransactions(transactions)
@@ -91,12 +115,17 @@ export function TransactionDashboard() {
     return () => {
       ignore = true
     }
-  }, [])
+  }, [accessToken])
 
   useEffect(() => {
+    if (!accessToken) {
+      return
+    }
+
     let disposed = false
 
     const connection = createTransactionsHubConnection({
+      accessToken,
       onClose: () => {
         if (!disposed) {
           setRealtimeStatus('disconnected')
@@ -144,14 +173,19 @@ export function TransactionDashboard() {
       disposed = true
       void connection.stop()
     }
-  }, [handleStatusChanged])
+  }, [accessToken, handleStatusChanged])
 
   async function handleSubmit(request: CreateTransactionRequest) {
+    if (!accessToken) {
+      setSubmitMessage('Login before submitting transactions.')
+      return
+    }
+
     setIsSubmitting(true)
     setSubmitMessage(null)
 
     try {
-      const response = await createTransaction(request)
+      const response = await createTransaction(request, accessToken)
       setSubmitMessage(`Transaction ${shortId(response.transactionId)} submitted. Waiting for status update.`)
     } catch (error) {
       setSubmitMessage(readError(error))
@@ -173,7 +207,16 @@ export function TransactionDashboard() {
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 7 }}>
-          <TransactionForm isSubmitting={isSubmitting} onSubmit={handleSubmit} />
+          {!accessToken && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Login with the development credentials to submit and view transactions.
+            </Alert>
+          )}
+          <TransactionForm
+            isSubmitting={isSubmitting}
+            isDisabled={!accessToken}
+            onSubmit={handleSubmit}
+          />
         </Grid>
 
         <Grid size={{ xs: 12, md: 5 }}>

@@ -10,6 +10,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
+using TransactionsManager.Contracts.Api.Auth;
 using TransactionsManager.Contracts.Api.Notifications;
 using TransactionsManager.Contracts.Api.Transactions;
 using TransactionsManager.Contracts.Messaging;
@@ -48,6 +49,7 @@ public sealed class TransactionFlowE2ETests : IAsyncLifetime
 
     private readonly ConcurrentBag<TransactionStatusChangedMessage> signalRUpdates = [];
     private readonly List<ServiceProcess> serviceProcesses = [];
+    private string? accessToken;
     private HubConnection? hubConnection;
 
     public async Task InitializeAsync()
@@ -83,6 +85,8 @@ public sealed class TransactionFlowE2ETests : IAsyncLifetime
 
         await WaitForHttpOkAsync(GatewayHealthUrl);
         await WaitForHttpOkAsync(NotificationHealthUrl);
+        accessToken = await LoginAsync();
+        gatewayClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         await WaitForRabbitMqQueueAsync(MessagingTopology.TransactionProcessorSubmittedQueue);
         await WaitForRabbitMqQueueAsync(MessagingTopology.GatewayProcessedQueue);
         await WaitForRabbitMqQueueAsync(MessagingTopology.NotificationServiceProcessedQueue);
@@ -90,7 +94,10 @@ public sealed class TransactionFlowE2ETests : IAsyncLifetime
         await PurgeRabbitMqQueuesAsync();
 
         hubConnection = new HubConnectionBuilder()
-            .WithUrl(NotificationHubUrl)
+            .WithUrl(NotificationHubUrl, options =>
+            {
+                options.AccessTokenProvider = () => Task.FromResult<string?>(accessToken);
+            })
             .WithAutomaticReconnect()
             .AddJsonProtocol(options =>
                 options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
@@ -172,6 +179,21 @@ public sealed class TransactionFlowE2ETests : IAsyncLifetime
         Assert.Equal(new TimeOnly(5, 0), TimeOnly.FromDateTime(AssertNotNull(rejectedRow.LocalSubmittedAt)));
 
         await WaitForRabbitMqQueuesToDrainAsync();
+    }
+
+    private async Task<string> LoginAsync()
+    {
+        using HttpResponseMessage response = await gatewayClient.PostAsJsonAsync(
+            "/api/auth/login",
+            new LoginRequest("admin", "Pass123!"),
+            JsonOptions);
+
+        response.EnsureSuccessStatusCode();
+
+        LoginResponse loginResponse = await response.Content.ReadFromJsonAsync<LoginResponse>(JsonOptions)
+            ?? throw new InvalidOperationException("Gateway returned an empty login response.");
+
+        return loginResponse.AccessToken;
     }
 
     private async Task<CreateTransactionResponse> SubmitTransactionAsync(
@@ -517,6 +539,12 @@ public sealed class TransactionFlowE2ETests : IAsyncLifetime
             startInfo.Environment["RabbitMq__Port"] = "5673";
             startInfo.Environment["RabbitMq__Username"] = "guest";
             startInfo.Environment["RabbitMq__Password"] = "guest";
+            startInfo.Environment["Jwt__Issuer"] = "transactions-manager";
+            startInfo.Environment["Jwt__Audience"] = "transactions-manager-client";
+            startInfo.Environment["Jwt__SigningKey"] = "development-only-signing-key-change-before-production";
+            startInfo.Environment["Jwt__ExpirationMinutes"] = "60";
+            startInfo.Environment["Auth__DevelopmentUser__Username"] = "admin";
+            startInfo.Environment["Auth__DevelopmentUser__Password"] = "Pass123!";
 
             if (aspNetCoreUrls is not null)
             {

@@ -14,7 +14,8 @@
         "RabbitMq__Password": "guest",
         "Jwt__Issuer": "transactions-manager",
         "Jwt__Audience": "transactions-manager-client",
-        "Jwt__SigningKey": "development-only-signing-key-change-before-production"
+        "Jwt__SigningKey": "development-only-signing-key-change-before-production",
+        "Jwt__ExpirationMinutes": "60"
       }
     }
   }

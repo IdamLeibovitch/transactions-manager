@@ -16,6 +16,7 @@ import type { CreateTransactionRequest, RegionCode } from './transactionTypes'
 import { regions } from './transactionTypes'
 
 type TransactionFormProps = {
+  isDisabled?: boolean
   isSubmitting: boolean
   onSubmit: (request: CreateTransactionRequest) => Promise<void>
 }
@@ -36,7 +37,7 @@ const initialState: FormState = {
   submittedAtUtc: formatUtcInputValue(new Date()),
 }
 
-export function TransactionForm({ isSubmitting, onSubmit }: TransactionFormProps) {
+export function TransactionForm({ isDisabled = false, isSubmitting, onSubmit }: TransactionFormProps) {
   const [formState, setFormState] = useState<FormState>(initialState)
   const [submitted, setSubmitted] = useState(false)
 
@@ -71,7 +72,7 @@ export function TransactionForm({ isSubmitting, onSubmit }: TransactionFormProps
 
         <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
-            disabled={isSubmitting}
+            disabled={isDisabled || isSubmitting}
             error={submitted && Boolean(validation.amount)}
             fullWidth
             helperText={submitted ? validation.amount : ' '}
@@ -85,7 +86,7 @@ export function TransactionForm({ isSubmitting, onSubmit }: TransactionFormProps
 
         <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
-            disabled={isSubmitting}
+            disabled={isDisabled || isSubmitting}
             error={submitted && Boolean(validation.currency)}
             fullWidth
             helperText={submitted ? validation.currency : ' '}
@@ -99,7 +100,7 @@ export function TransactionForm({ isSubmitting, onSubmit }: TransactionFormProps
 
         <Grid size={{ xs: 12 }}>
           <TextField
-            disabled={isSubmitting}
+            disabled={isDisabled || isSubmitting}
             error={submitted && Boolean(validation.merchantName)}
             fullWidth
             helperText={submitted ? validation.merchantName : ' '}
@@ -114,7 +115,7 @@ export function TransactionForm({ isSubmitting, onSubmit }: TransactionFormProps
           <FormControl fullWidth>
             <InputLabel id="region-label">Region</InputLabel>
             <Select
-              disabled={isSubmitting}
+              disabled={isDisabled || isSubmitting}
               label="Region"
               labelId="region-label"
               onChange={(event) => updateField('region', event.target.value as RegionCode)}
@@ -131,7 +132,7 @@ export function TransactionForm({ isSubmitting, onSubmit }: TransactionFormProps
 
         <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
-            disabled={isSubmitting}
+            disabled={isDisabled || isSubmitting}
             error={submitted && Boolean(validation.submittedAtUtc)}
             fullWidth
             helperText={submitted ? validation.submittedAtUtc : 'UTC instant used for approval'}
@@ -145,7 +146,13 @@ export function TransactionForm({ isSubmitting, onSubmit }: TransactionFormProps
 
         <Grid size={{ xs: 12 }}>
           <Stack direction="row" sx={{ justifyContent: 'flex-end' }}>
-            <Button loading={isSubmitting} startIcon={<SendIcon />} type="submit" variant="contained">
+            <Button
+              disabled={isDisabled}
+              loading={isSubmitting}
+              startIcon={<SendIcon />}
+              type="submit"
+              variant="contained"
+            >
               Submit transaction
             </Button>
           </Stack>

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TransactionsManager.Contracts.Api.Transactions;
 using TransactionsManager.Contracts.Transactions;
@@ -7,6 +8,7 @@ using TransactionsManager.GatewayApi.Services;
 namespace TransactionsManager.GatewayApi.Controllers;
 
 [ApiController]
+[Authorize]
 [ValidateModel]
 [Route("api/transactions")]
 public sealed class TransactionsController(ITransactionService transactionService) : ControllerBase

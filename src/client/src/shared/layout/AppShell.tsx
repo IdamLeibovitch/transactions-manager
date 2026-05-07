@@ -1,5 +1,6 @@
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
 import LoginIcon from '@mui/icons-material/Login'
+import LogoutIcon from '@mui/icons-material/Logout'
 import NotificationsIcon from '@mui/icons-material/Notifications'
 import TranslateIcon from '@mui/icons-material/Translate'
 import {
@@ -17,9 +18,19 @@ import type { ReactNode } from 'react'
 
 type AppShellProps = {
   children: ReactNode
+  isAuthenticated: boolean
+  onLoginClick: () => void
+  onLogoutClick: () => void
+  username?: string
 }
 
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({
+  children,
+  isAuthenticated,
+  onLoginClick,
+  onLogoutClick,
+  username,
+}: AppShellProps) {
   return (
     <Box sx={{ minHeight: '100svh', bgcolor: 'background.default' }}>
       <AppBar
@@ -47,9 +58,15 @@ export function AppShell({ children }: AppShellProps) {
                 <TranslateIcon />
               </IconButton>
             </Tooltip>
-            <Button startIcon={<LoginIcon />} variant="contained">
-              Login
-            </Button>
+            {isAuthenticated ? (
+              <Button onClick={onLogoutClick} startIcon={<LogoutIcon />} variant="outlined">
+                {username ?? 'Logout'}
+              </Button>
+            ) : (
+              <Button onClick={onLoginClick} startIcon={<LoginIcon />} variant="contained">
+                Login
+              </Button>
+            )}
           </Stack>
         </Toolbar>
       </AppBar>

@@ -4,6 +4,7 @@ import type { TransactionStatusChangedMessage } from './transactionTypes'
 const signalRUrl = import.meta.env.VITE_SIGNALR_URL ?? 'http://localhost:5081/ws/transactions'
 
 export type TransactionsHubHandlers = {
+  accessToken: string
   onReconnecting: () => void
   onReconnected: () => void
   onClose: () => void
@@ -12,7 +13,9 @@ export type TransactionsHubHandlers = {
 
 export function createTransactionsHubConnection(handlers: TransactionsHubHandlers) {
   const connection = new signalR.HubConnectionBuilder()
-    .withUrl(signalRUrl)
+    .withUrl(signalRUrl, {
+      accessTokenFactory: () => handlers.accessToken,
+    })
     .withAutomaticReconnect()
     .configureLogging(signalR.LogLevel.Warning)
     .build()

@@ -7,29 +7,30 @@ import type {
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5080'
 
-export async function createTransaction(request: CreateTransactionRequest) {
+export async function createTransaction(request: CreateTransactionRequest, accessToken: string) {
   return sendJson<CreateTransactionResponse>('/api/transactions', {
     method: 'POST',
     body: JSON.stringify(request),
-  })
+  }, accessToken)
 }
 
-export async function getTransaction(id: string) {
-  return sendJson<TransactionDto>(`/api/transactions/${id}`)
+export async function getTransaction(id: string, accessToken: string) {
+  return sendJson<TransactionDto>(`/api/transactions/${id}`, undefined, accessToken)
 }
 
-export async function listTransactions(status?: TransactionStatus) {
+export async function listTransactions(accessToken: string, status?: TransactionStatus) {
   const query = status ? `?status=${encodeURIComponent(status)}` : ''
 
-  return sendJson<TransactionDto[]>(`/api/transactions${query}`)
+  return sendJson<TransactionDto[]>(`/api/transactions${query}`, undefined, accessToken)
 }
 
-async function sendJson<T>(path: string, init?: RequestInit) {
+async function sendJson<T>(path: string, init?: RequestInit, accessToken?: string) {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...init,
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...init?.headers,
     },
   })
