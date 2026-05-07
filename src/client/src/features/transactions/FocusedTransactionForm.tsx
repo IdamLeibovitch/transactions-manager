@@ -17,7 +17,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { LocalizationProvider as DatePickerLocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { StaticTimePicker } from '@mui/x-date-pickers/StaticTimePicker'
 import dayjs, { type Dayjs } from 'dayjs'
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useRef, useState, type KeyboardEvent, type Ref } from 'react'
 import { useLocalization } from '../../app/LocalizationContext'
 import type { CreateTransactionRequest, RegionCode } from './transactionTypes'
 import { regions } from './transactionTypes'
@@ -56,6 +56,12 @@ export function FocusedTransactionForm({
   )
   const [isPickerOpen, setIsPickerOpen] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const hourInputRef = useRef<HTMLInputElement | null>(null)
+  const minuteInputRef = useRef<HTMLInputElement | null>(null)
+  const timeGroupLabelId = useId()
+  const timeHelperId = useId()
+  const timeKeyboardHelpId = useId()
+  const timeDescriptionIds = `${timeHelperId} ${timeKeyboardHelpId}`
 
   const isTimeInvalid = !isValidTime(submittedTime)
   const timePickerValue = toDayjsTime(submittedTime)
@@ -93,6 +99,41 @@ export function FocusedTransactionForm({
       ...current,
       [part]: digitsOnly,
     }))
+
+    if (part === 'hour' && digitsOnly.length === 2) {
+      window.setTimeout(() => minuteInputRef.current?.focus(), 0)
+    }
+  }
+
+  function handleTimePartStep(part: keyof TimeParts, step: number) {
+    const currentValue = Number(submittedTime[part])
+    const current = Number.isFinite(currentValue) ? currentValue : 0
+    const max = part === 'hour' ? 23 : 59
+    const next = wrapNumber(current + step, 0, max)
+
+    setSubmittedTime((value) => ({
+      ...value,
+      [part]: String(next).padStart(2, '0'),
+    }))
+  }
+
+  function handleTimePartBoundary(part: keyof TimeParts, boundary: 'min' | 'max') {
+    setSubmittedTime((value) => ({
+      ...value,
+      [part]: boundary === 'min' ? '00' : part === 'hour' ? '23' : '59',
+    }))
+  }
+
+  function handleTimePartBlur(part: keyof TimeParts) {
+    const value = submittedTime[part]
+
+    if (part === 'hour' && isValidHour(value)) {
+      setSubmittedTime((current) => ({ ...current, hour: value.padStart(2, '0') }))
+    }
+
+    if (part === 'minute' && isValidMinute(value)) {
+      setSubmittedTime((current) => ({ ...current, minute: value.padStart(2, '0') }))
+    }
   }
 
   function handlePickerChange(value: Dayjs | null) {
@@ -159,16 +200,32 @@ export function FocusedTransactionForm({
                 p: { xs: 2.5, sm: 3 },
               }}
             >
-              <Typography color="text.secondary" sx={{ fontWeight: 700 }}>
+              <Typography color="text.secondary" id={timeGroupLabelId} sx={{ fontWeight: 700 }}>
                 {t('form.enterTime')}
               </Typography>
 
-              <Stack direction="row" spacing={{ xs: 1.5, sm: 2 }} sx={{ alignItems: 'flex-start' }}>
+              <Stack
+                aria-describedby={timeDescriptionIds}
+                aria-labelledby={timeGroupLabelId}
+                direction="row"
+                role="group"
+                spacing={{ xs: 1.5, sm: 2 }}
+                sx={{ alignItems: 'flex-start' }}
+              >
                 <TimePartInput
+                  ariaLabel={t('form.hour')}
+                  describedBy={timeDescriptionIds}
                   disabled={isDisabled || isSubmitting}
                   error={submitted && !isValidHour(submittedTime.hour)}
+                  inputRef={hourInputRef}
                   label={t('form.hour')}
+                  max={23}
                   onChange={(value) => handleTimePartChange('hour', value)}
+                  onMax={() => handleTimePartBoundary('hour', 'max')}
+                  onMin={() => handleTimePartBoundary('hour', 'min')}
+                  onMoveNext={() => minuteInputRef.current?.focus()}
+                  onNormalize={() => handleTimePartBlur('hour')}
+                  onStep={(step) => handleTimePartStep('hour', step)}
                   value={submittedTime.hour}
                 />
                 <Typography
@@ -183,10 +240,19 @@ export function FocusedTransactionForm({
                   :
                 </Typography>
                 <TimePartInput
+                  ariaLabel={t('form.minute')}
+                  describedBy={timeDescriptionIds}
                   disabled={isDisabled || isSubmitting}
                   error={submitted && !isValidMinute(submittedTime.minute)}
+                  inputRef={minuteInputRef}
                   label={t('form.minute')}
+                  max={59}
                   onChange={(value) => handleTimePartChange('minute', value)}
+                  onMax={() => handleTimePartBoundary('minute', 'max')}
+                  onMin={() => handleTimePartBoundary('minute', 'min')}
+                  onMovePrevious={() => hourInputRef.current?.focus()}
+                  onNormalize={() => handleTimePartBlur('minute')}
+                  onStep={(step) => handleTimePartStep('minute', step)}
                   value={submittedTime.minute}
                 />
               </Stack>
@@ -201,8 +267,28 @@ export function FocusedTransactionForm({
                     <AccessTimeIcon />
                   </IconButton>
                 </Tooltip>
-                <Typography color={submitted && isTimeInvalid ? 'error' : 'text.secondary'} variant="body2">
+                <Typography
+                  color={submitted && isTimeInvalid ? 'error' : 'text.secondary'}
+                  id={timeHelperId}
+                  variant="body2"
+                >
                   {submitted && isTimeInvalid ? t('validation.submittedAt') : t('form.localTimeHelper')}
+                </Typography>
+                <Typography
+                  id={timeKeyboardHelpId}
+                  sx={{
+                    border: 0,
+                    clip: 'rect(0 0 0 0)',
+                    height: 1,
+                    m: -1,
+                    overflow: 'hidden',
+                    p: 0,
+                    position: 'absolute',
+                    whiteSpace: 'nowrap',
+                    width: 1,
+                  }}
+                >
+                  {t('form.timeKeyboardHelp')}
                 </Typography>
               </Stack>
 
@@ -257,25 +343,102 @@ type TimeParts = {
 }
 
 type TimePartInputProps = {
+  ariaLabel: string
+  describedBy: string
   disabled: boolean
   error: boolean
+  inputRef: Ref<HTMLInputElement>
   label: string
+  max: 23 | 59
   onChange: (value: string) => void
+  onMax: () => void
+  onMin: () => void
+  onMoveNext?: () => void
+  onMovePrevious?: () => void
+  onNormalize: () => void
+  onStep: (step: number) => void
   value: string
 }
 
-function TimePartInput({ disabled, error, label, onChange, value }: TimePartInputProps) {
+function TimePartInput({
+  ariaLabel,
+  describedBy,
+  disabled,
+  error,
+  inputRef,
+  label,
+  max,
+  onChange,
+  onMax,
+  onMin,
+  onMoveNext,
+  onMovePrevious,
+  onNormalize,
+  onStep,
+  value,
+}: TimePartInputProps) {
+  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    switch (event.key) {
+      case 'ArrowUp':
+        event.preventDefault()
+        onStep(1)
+        return
+      case 'ArrowDown':
+        event.preventDefault()
+        onStep(-1)
+        return
+      case 'Home':
+        event.preventDefault()
+        onMin()
+        return
+      case 'End':
+        event.preventDefault()
+        onMax()
+        return
+      case ':':
+      case 'ArrowRight':
+        if (onMoveNext) {
+          event.preventDefault()
+          onMoveNext()
+        }
+        return
+      case 'ArrowLeft':
+        if (onMovePrevious && event.currentTarget.selectionStart === 0) {
+          event.preventDefault()
+          onMovePrevious()
+        }
+        return
+      case 'Backspace':
+        if (onMovePrevious && value.length === 0) {
+          event.preventDefault()
+          onMovePrevious()
+        }
+        return
+      default:
+    }
+  }
+
   return (
     <TextField
       disabled={disabled}
       error={error}
       fullWidth
+      inputRef={inputRef}
       label={label}
       onChange={(event) => onChange(event.target.value)}
+      onBlur={onNormalize}
+      onFocus={(event) => event.currentTarget.select()}
+      onKeyDown={handleKeyDown}
       slotProps={{
         htmlInput: {
+          'aria-describedby': describedBy,
+          'aria-invalid': error || undefined,
+          'aria-label': ariaLabel,
           inputMode: 'numeric',
           maxLength: 2,
+          max,
+          min: 0,
+          pattern: '[0-9]*',
         },
       }}
       sx={{
@@ -299,6 +462,18 @@ function TimePartInput({ disabled, error, label, onChange, value }: TimePartInpu
       value={value}
     />
   )
+}
+
+function wrapNumber(value: number, min: number, max: number) {
+  if (value > max) {
+    return min
+  }
+
+  if (value < min) {
+    return max
+  }
+
+  return value
 }
 
 function isValidTime(value: TimeParts) {
