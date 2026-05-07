@@ -42,7 +42,7 @@ export function FocusedTransactionsViewer({
 }: FocusedTransactionsViewerProps) {
   const { direction, locale, t } = useLocalization()
   const theme = useTheme()
-  const showSideButtons = useMediaQuery(theme.breakpoints.up('md'))
+  const showSideButtons = useMediaQuery(theme.breakpoints.up('lg'))
   const listRef = useRef<HTMLDivElement | null>(null)
   const approvedTransactions = useMemo(
     () => transactions.filter((transaction) => transaction.status === 'Approved'),
@@ -82,69 +82,88 @@ export function FocusedTransactionsViewer({
           </CardContent>
         </Card>
       ) : (
-        <Box sx={{ position: 'relative' }}>
-          {showSideButtons && (
-            <TransactionNavigationButton
-              action="previous"
-              disabled={approvedTransactions.length === 0}
-              onClick={() => scrollTransactions('previous')}
-              placement="side"
-              title={t('cards.previous')}
-            />
+        <Stack spacing={1}>
+          {!showSideButtons && (
+            <Stack direction="row" spacing={0.5} sx={{ justifyContent: 'flex-end' }}>
+              <TransactionNavigationButton
+                action="previous"
+                disabled={approvedTransactions.length === 0}
+                onClick={() => scrollTransactions('previous')}
+                title={t('cards.previous')}
+              />
+              <TransactionNavigationButton
+                action="next"
+                disabled={approvedTransactions.length === 0}
+                onClick={() => scrollTransactions('next')}
+                title={t('cards.next')}
+              />
+            </Stack>
           )}
 
-          <Box
-            ref={listRef}
-            sx={{
-              direction,
-              display: 'flex',
-              gap: 2,
-              overflowX: 'auto',
-              pb: 1,
-              scrollBehavior: 'smooth',
-              scrollSnapType: 'x mandatory',
-              scrollbarWidth: 'thin',
-            }}
-          >
-            {approvedTransactions.map((transaction) => (
-              <Card
-                data-focused-transaction-card
-                key={transaction.id}
-                variant="outlined"
-                sx={{
-                  direction,
-                  animation: `${focusedTransactionEnter} ${theme.transitions.duration.standard}ms ease 90ms both`,
-                  flex: '0 0 auto',
-                  minHeight: 118,
-                  scrollSnapAlign: 'start',
-                  width: { xs: '78vw', sm: 260, md: 280 },
-                }}
-              >
-                <CardContent>
-                  <Typography sx={{ fontWeight: 700 }} variant="h6">
-                    {t('cards.timeTitle').replace(
-                      '{time}',
-                      formatLocalTime(transaction.localSubmittedAt, locale, t),
-                    )}
-                  </Typography>
-                  <Typography color="text.secondary">
-                    {t('cards.timeZoneSubtitle').replace('{timeZone}', getRegionTimeZone(transaction.region))}
-                  </Typography>
-                </CardContent>
-              </Card>
-            ))}
+          <Box sx={{ position: 'relative', px: { lg: 5 } }}>
+            {showSideButtons && (
+              <TransactionNavigationButton
+                action="previous"
+                disabled={approvedTransactions.length === 0}
+                onClick={() => scrollTransactions('previous')}
+                placement="side"
+                title={t('cards.previous')}
+              />
+            )}
+
+            <Box
+              ref={listRef}
+              sx={{
+                direction,
+                display: 'flex',
+                gap: 2,
+                overflowX: 'auto',
+                pb: 1,
+                scrollBehavior: 'smooth',
+                scrollSnapType: 'x mandatory',
+                scrollbarWidth: 'thin',
+              }}
+            >
+              {approvedTransactions.map((transaction) => (
+                <Card
+                  data-focused-transaction-card
+                  key={transaction.id}
+                  variant="outlined"
+                  sx={{
+                    direction,
+                    animation: `${focusedTransactionEnter} ${theme.transitions.duration.standard}ms ease 90ms both`,
+                    flex: '0 0 auto',
+                    minHeight: 118,
+                    scrollSnapAlign: 'start',
+                    width: { xs: '78vw', sm: 260, md: 280 },
+                  }}
+                >
+                  <CardContent>
+                    <Typography sx={{ fontWeight: 700 }} variant="h6">
+                      {t('cards.timeTitle').replace(
+                        '{time}',
+                        formatLocalTime(transaction.localSubmittedAt, locale, t),
+                      )}
+                    </Typography>
+                    <Typography color="text.secondary">
+                      {t('cards.timeZoneSubtitle').replace('{timeZone}', getRegionTimeZone(transaction.region))}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              ))}
+            </Box>
+
+            {showSideButtons && (
+              <TransactionNavigationButton
+                action="next"
+                disabled={approvedTransactions.length === 0}
+                onClick={() => scrollTransactions('next')}
+                placement="side"
+                title={t('cards.next')}
+              />
+            )}
           </Box>
-
-          {showSideButtons && (
-            <TransactionNavigationButton
-              action="next"
-              disabled={approvedTransactions.length === 0}
-              onClick={() => scrollTransactions('next')}
-              placement="side"
-              title={t('cards.next')}
-            />
-          )}
-        </Box>
+        </Stack>
       )}
     </Box>
   )
