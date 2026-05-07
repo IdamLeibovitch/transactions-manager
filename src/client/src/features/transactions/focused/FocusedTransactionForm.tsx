@@ -212,7 +212,7 @@ export function FocusedTransactionForm({
                     direction="row"
                     role="group"
                     spacing={{ xs: 1.5, sm: 2 }}
-                    sx={{ alignItems: 'flex-start' }}
+                    sx={{ alignItems: 'flex-start', direction: 'ltr' }}
                   >
                     <TimePartInput
                       ariaLabel={t('form.hour')}
