@@ -11,15 +11,15 @@ import {
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import { useEffect, useMemo, useRef } from 'react'
-import { useLocalization } from '../../app/LocalizationContext'
-import { TransactionNavigationButton } from './TransactionNavigationButton'
-import type { RegionCode, TransactionDto } from './transactionTypes'
-import { regions } from './transactionTypes'
+import { useLocalization } from '../../../app/LocalizationContext'
+import { TransactionNavigationButton } from '../TransactionNavigationButton'
+import type { RegionCode, TransactionDto } from '../transactionTypes'
+import { regions } from '../transactionTypes'
 import {
   scrollTransactionCardIntoView,
   scrollTransactionList,
   type TransactionNavigationAction,
-} from './utils/transactionListNavigation'
+} from '../utils/transactionListNavigation'
 
 type FocusedTransactionsViewerProps = {
   error: string | null

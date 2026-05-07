@@ -12,9 +12,9 @@ import {
   TextField,
 } from '@mui/material'
 import { useMemo, useState } from 'react'
-import { useLocalization } from '../../app/LocalizationContext'
-import type { CreateTransactionRequest, RegionCode } from './transactionTypes'
-import { regions } from './transactionTypes'
+import { useLocalization } from '../../../app/LocalizationContext'
+import type { CreateTransactionRequest, RegionCode } from '../transactionTypes'
+import { regions } from '../transactionTypes'
 
 type TransactionFormProps = {
   isDisabled?: boolean

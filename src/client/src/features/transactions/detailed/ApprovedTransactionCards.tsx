@@ -12,16 +12,16 @@ import {
   Typography,
 } from '@mui/material'
 import { useEffect, useRef } from 'react'
-import { useLocalization } from '../../app/LocalizationContext'
-import { TransactionNavigationButton } from './TransactionNavigationButton'
-import type { TransactionDto } from './transactionTypes'
-import type { RegionCode } from './transactionTypes'
-import { regions } from './transactionTypes'
+import { useLocalization } from '../../../app/LocalizationContext'
+import { TransactionNavigationButton } from '../TransactionNavigationButton'
+import type { TransactionDto } from '../transactionTypes'
+import type { RegionCode } from '../transactionTypes'
+import { regions } from '../transactionTypes'
 import {
   scrollTransactionCardIntoView,
   scrollTransactionList,
   type TransactionNavigationAction,
-} from './utils/transactionListNavigation'
+} from '../utils/transactionListNavigation'
 
 type ApprovedTransactionCardsProps = {
   error: string | null
