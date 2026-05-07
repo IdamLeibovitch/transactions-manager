@@ -11,13 +11,17 @@ import {
   Stack,
   Typography,
 } from '@mui/material'
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useLocalization } from '../../app/LocalizationContext'
 import { TransactionNavigationButton } from './TransactionNavigationButton'
 import type { TransactionDto } from './transactionTypes'
 import type { RegionCode } from './transactionTypes'
 import { regions } from './transactionTypes'
-import { scrollTransactionList, type TransactionNavigationAction } from './utils/transactionListNavigation'
+import {
+  scrollTransactionCardIntoView,
+  scrollTransactionList,
+  type TransactionNavigationAction,
+} from './utils/transactionListNavigation'
 
 type ApprovedTransactionCardsProps = {
   error: string | null
@@ -36,6 +40,34 @@ export function ApprovedTransactionCards({
 }: ApprovedTransactionCardsProps) {
   const { direction, locale, t } = useLocalization()
   const listRef = useRef<HTMLDivElement | null>(null)
+  const previousTransactionIdsRef = useRef<Set<string> | null>(null)
+
+  useEffect(() => {
+    const currentIds = new Set(transactions.map((transaction) => transaction.id))
+    const previousIds = previousTransactionIdsRef.current
+    previousTransactionIdsRef.current = currentIds
+
+    if (!previousIds) {
+      return undefined
+    }
+
+    const newTransaction = transactions.find((transaction) => !previousIds.has(transaction.id))
+
+    if (!newTransaction) {
+      return undefined
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      const list = listRef.current
+      const card = list?.querySelector<HTMLElement>(`[data-transaction-id="${newTransaction.id}"]`)
+
+      if (list && card) {
+        scrollTransactionCardIntoView(list, card)
+      }
+    })
+
+    return () => window.cancelAnimationFrame(frameId)
+  }, [transactions])
 
   function scrollTransactions(action: TransactionNavigationAction) {
     const list = listRef.current
@@ -121,6 +153,7 @@ export function ApprovedTransactionCards({
           {transactions.map((transaction) => (
             <Card
               data-transaction-card
+              data-transaction-id={transaction.id}
               key={transaction.id}
               variant="outlined"
               sx={{

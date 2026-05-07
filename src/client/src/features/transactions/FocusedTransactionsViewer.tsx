@@ -10,12 +10,16 @@ import {
   useMediaQuery,
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useLocalization } from '../../app/LocalizationContext'
 import { TransactionNavigationButton } from './TransactionNavigationButton'
 import type { RegionCode, TransactionDto } from './transactionTypes'
 import { regions } from './transactionTypes'
-import { scrollTransactionList, type TransactionNavigationAction } from './utils/transactionListNavigation'
+import {
+  scrollTransactionCardIntoView,
+  scrollTransactionList,
+  type TransactionNavigationAction,
+} from './utils/transactionListNavigation'
 
 type FocusedTransactionsViewerProps = {
   error: string | null
@@ -44,10 +48,40 @@ export function FocusedTransactionsViewer({
   const theme = useTheme()
   const showSideButtons = useMediaQuery(theme.breakpoints.up('lg'))
   const listRef = useRef<HTMLDivElement | null>(null)
+  const previousTransactionIdsRef = useRef<Set<string> | null>(null)
   const approvedTransactions = useMemo(
     () => transactions.filter((transaction) => transaction.status === 'Approved'),
     [transactions],
   )
+
+  useEffect(() => {
+    const currentIds = new Set(approvedTransactions.map((transaction) => transaction.id))
+    const previousIds = previousTransactionIdsRef.current
+    previousTransactionIdsRef.current = currentIds
+
+    if (!previousIds) {
+      return undefined
+    }
+
+    const newTransaction = approvedTransactions.find((transaction) => !previousIds.has(transaction.id))
+
+    if (!newTransaction) {
+      return undefined
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      const list = listRef.current
+      const card = list?.querySelector<HTMLElement>(
+        `[data-focused-transaction-id="${newTransaction.id}"]`,
+      )
+
+      if (list && card) {
+        scrollTransactionCardIntoView(list, card)
+      }
+    })
+
+    return () => window.cancelAnimationFrame(frameId)
+  }, [approvedTransactions])
 
   function scrollTransactions(action: TransactionNavigationAction) {
     const list = listRef.current
@@ -129,6 +163,7 @@ export function FocusedTransactionsViewer({
               {approvedTransactions.map((transaction) => (
                 <Card
                   data-focused-transaction-card
+                  data-focused-transaction-id={transaction.id}
                   dir={direction}
                   key={transaction.id}
                   variant="outlined"

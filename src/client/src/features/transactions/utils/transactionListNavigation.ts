@@ -32,10 +32,10 @@ export function scrollTransactionList(
     return
   }
 
-  scrollCardIntoListView(list, targetCard)
+  scrollTransactionCardIntoView(list, targetCard)
 }
 
-function scrollCardIntoListView(list: HTMLDivElement, card: HTMLElement) {
+export function scrollTransactionCardIntoView(list: HTMLDivElement, card: HTMLElement) {
   const listRect = list.getBoundingClientRect()
   const cardRect = card.getBoundingClientRect()
   const isRtl = window.getComputedStyle(list).direction === 'rtl'
