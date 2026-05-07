@@ -1,22 +1,30 @@
 import { CacheProvider } from '@emotion/react'
 import { CssBaseline, ThemeProvider } from '@mui/material'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useDispatch } from 'react-redux'
 import { createEmotionCache } from './app/createEmotionCache'
 import { LocalizationProvider } from './app/LocalizationProvider'
 import { getTextDirection, type Language } from './app/localization'
+import type { AppDispatch } from './app/store'
 import { createAppTheme } from './app/theme'
 import { LoginScreen } from './features/auth/LoginScreen'
-import { getMillisecondsUntilSessionExpiration, isAuthSession, isSessionExpired } from './features/auth/authSession'
+import {
+  authStorageKey,
+  getMillisecondsUntilSessionExpiration,
+  isAuthSession,
+  isSessionExpired,
+} from './features/auth/authSession'
 import type { AuthSession } from './features/auth/authTypes'
 import { TransactionDashboard } from './features/transactions/TransactionDashboard'
 import type { TransactionViewMode } from './features/transactions/transactionViewTypes'
+import { api } from './shared/api/apiSlice'
 import { AppShell } from './shared/layout/AppShell'
 
-const authStorageKey = 'transactions-manager.auth'
 const languageStorageKey = 'transactions-manager.language'
 const viewModeStorageKey = 'transactions-manager.viewMode'
 
 function App() {
+  const dispatch = useDispatch<AppDispatch>()
   const [authSession, setAuthSession] = useState<AuthSession | null>(readStoredSession)
   const [language, setLanguage] = useState<Language>(readStoredLanguage)
   const [viewMode, setViewMode] = useState<TransactionViewMode>(readStoredViewMode)
@@ -38,7 +46,8 @@ function App() {
   const handleLogout = useCallback(() => {
     window.localStorage.removeItem(authStorageKey)
     setAuthSession(null)
-  }, [])
+    dispatch(api.util.resetApiState())
+  }, [dispatch])
 
   useEffect(() => {
     if (!authSession) {

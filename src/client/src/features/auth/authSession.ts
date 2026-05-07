@@ -1,5 +1,7 @@
 import type { AuthSession } from './authTypes'
 
+export const authStorageKey = 'transactions-manager.auth'
+
 const expirationSkewMs = 30_000
 
 export function isAuthSession(value: unknown): value is AuthSession {
@@ -22,6 +24,22 @@ export function isSessionExpired(session: AuthSession, now = Date.now()) {
 
 export function getMillisecondsUntilSessionExpiration(session: AuthSession, now = Date.now()) {
   return Math.max(0, getSessionExpirationTime(session) - now - expirationSkewMs)
+}
+
+export function getStoredAccessToken() {
+  const storedValue = window.localStorage.getItem(authStorageKey)
+
+  if (!storedValue) {
+    return null
+  }
+
+  try {
+    const session = JSON.parse(storedValue) as unknown
+
+    return isAuthSession(session) && !isSessionExpired(session) ? session.accessToken : null
+  } catch {
+    return null
+  }
 }
 
 function getSessionExpirationTime(session: AuthSession) {

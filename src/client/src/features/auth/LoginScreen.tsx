@@ -10,8 +10,9 @@ import {
 } from '@mui/material'
 import { useState } from 'react'
 import { useLocalization } from '../../app/LocalizationContext'
+import { isUnauthorizedApiError, readApiErrorMessage } from '../../shared/api/apiErrors'
+import { useLoginMutation } from '../../shared/api/apiSlice'
 import type { AuthSession } from './authTypes'
-import { login } from './authApi'
 
 type LoginScreenProps = {
   onLogin: (session: AuthSession) => void
@@ -22,20 +23,21 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   const [username, setUsername] = useState('admin')
   const [password, setPassword] = useState('Pass123!')
   const [error, setError] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [login, { isLoading: isSubmitting }] = useLoginMutation()
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
-    setIsSubmitting(true)
 
     try {
-      const response = await login({ username, password })
+      const response = await login({ username, password }).unwrap()
       onLogin({ ...response, username })
     } catch (loginError) {
-      setError(loginError instanceof Error ? localizeLoginError(loginError.message, t) : t('auth.loginFailed'))
-    } finally {
-      setIsSubmitting(false)
+      setError(
+        isUnauthorizedApiError(loginError)
+          ? t('auth.invalidCredentials')
+          : localizeLoginError(readApiErrorMessage(loginError, 'auth.loginFailed'), t),
+      )
     }
   }
 

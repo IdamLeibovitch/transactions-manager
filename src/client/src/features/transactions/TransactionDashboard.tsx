@@ -11,8 +11,17 @@ import {
   Typography,
 } from '@mui/material'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useDispatch } from 'react-redux'
 import { useLocalization } from '../../app/LocalizationContext'
 import { interpolate } from '../../app/localization'
+import type { AppDispatch } from '../../app/store'
+import { isUnauthorizedApiError, readApiErrorMessage } from '../../shared/api/apiErrors'
+import {
+  api,
+  useCreateTransactionMutation,
+  useLazyGetTransactionQuery,
+  useListTransactionsQuery,
+} from '../../shared/api/apiSlice'
 import { useSignalR } from '../../shared/hooks/useSignalR'
 import { ApprovedTransactionCards } from './ApprovedTransactionCards'
 import { FocusedTransactionForm } from './FocusedTransactionForm'
@@ -24,7 +33,6 @@ import type {
   TransactionStatusChangedMessage,
 } from './transactionTypes'
 import type { TransactionViewMode } from './transactionViewTypes'
-import { createTransaction, getTransaction, listTransactions, UnauthorizedError } from './transactionsApi'
 
 type TransactionDashboardProps = {
   accessToken: string | null
@@ -44,31 +52,40 @@ const transactionsHubUrl = import.meta.env.VITE_SIGNALR_URL ?? 'http://localhost
 
 export function TransactionDashboard({ accessToken, onUnauthorized, viewMode }: TransactionDashboardProps) {
   const { t } = useLocalization()
-  const [approvedTransactions, setApprovedTransactions] = useState<TransactionDto[]>([])
-  const [isLoadingApproved, setIsLoadingApproved] = useState(Boolean(accessToken))
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const dispatch = useDispatch<AppDispatch>()
   const [approvedError, setApprovedError] = useState<string | null>(null)
   const [submitMessage, setSubmitMessage] = useState<string | null>(null)
+  const [createTransaction, createTransactionResult] = useCreateTransactionMutation()
+  const [getTransaction] = useLazyGetTransactionQuery()
+  const {
+    data: approvedTransactions = [],
+    error: approvedQueryError,
+    isFetching: isFetchingApproved,
+    isLoading: isLoadingApproved,
+    refetch: refetchApprovedTransactions,
+  } = useListTransactionsQuery('Approved', {
+    skip: !accessToken,
+  })
+  const approvedQueryErrorMessage = approvedQueryError
+    ? readApiErrorMessage(approvedQueryError, t('common.unexpectedError'))
+    : null
+  const approvedCardsError = approvedError ?? approvedQueryErrorMessage
+  const isApprovedLoading = Boolean(accessToken) && (isLoadingApproved || isFetchingApproved)
 
   const loadApprovedTransactions = useCallback(async () => {
     if (!accessToken) {
-      setApprovedTransactions([])
-      setIsLoadingApproved(false)
       setApprovedError(null)
       return
     }
 
     setApprovedError(null)
-    setIsLoadingApproved(true)
 
     try {
-      setApprovedTransactions(await listTransactions(accessToken, 'Approved'))
+      await refetchApprovedTransactions().unwrap()
     } catch (error) {
       handleApiError(error, onUnauthorized, (message) => setApprovedError(message), t)
-    } finally {
-      setIsLoadingApproved(false)
     }
-  }, [accessToken, onUnauthorized, t])
+  }, [accessToken, onUnauthorized, refetchApprovedTransactions, t])
 
   const handleStatusChanged = useCallback(async (message: TransactionStatusChangedMessage) => {
     if (!accessToken) {
@@ -77,8 +94,10 @@ export function TransactionDashboard({ accessToken, onUnauthorized, viewMode }: 
 
     if (message.status === 'Approved') {
       try {
-        const approvedTransaction = await getTransaction(message.transactionId, accessToken)
-        setApprovedTransactions((current) => upsertApprovedTransaction(current, approvedTransaction))
+        const approvedTransaction = await getTransaction(message.transactionId).unwrap()
+        dispatch(api.util.updateQueryData('listTransactions', 'Approved', (draft) => {
+          upsertApprovedTransaction(draft, approvedTransaction)
+        }))
         setSubmitMessage(t('message.transactionApproved'))
       } catch (error) {
         handleApiError(error, onUnauthorized, (message) => setApprovedError(message), t)
@@ -88,16 +107,16 @@ export function TransactionDashboard({ accessToken, onUnauthorized, viewMode }: 
     }
 
     if (message.status === 'Rejected') {
-      setApprovedTransactions((current) =>
-        current.filter((transaction) => transaction.id !== message.transactionId),
-      )
+      dispatch(api.util.updateQueryData('listTransactions', 'Approved', (draft) => {
+        removeApprovedTransaction(draft, message.transactionId)
+      }))
       setSubmitMessage(
         interpolate(t('message.transactionRejected'), {
           reason: translateDecisionReason(message.decisionReason, t),
         }),
       )
     }
-  }, [accessToken, onUnauthorized, t])
+  }, [accessToken, dispatch, getTransaction, onUnauthorized, t])
 
   const signalREventHandlers = useMemo(() => [
     {
@@ -116,39 +135,10 @@ export function TransactionDashboard({ accessToken, onUnauthorized, viewMode }: 
   })
 
   useEffect(() => {
-    let ignore = false
-
-    async function loadInitialApprovedTransactions() {
-      if (!accessToken) {
-        setApprovedTransactions([])
-        setIsLoadingApproved(false)
-        setApprovedError(null)
-        return
-      }
-
-      try {
-        const transactions = await listTransactions(accessToken, 'Approved')
-
-        if (!ignore) {
-          setApprovedTransactions(transactions)
-        }
-      } catch (error) {
-        if (!ignore) {
-          handleApiError(error, onUnauthorized, (message) => setApprovedError(message), t)
-        }
-      } finally {
-        if (!ignore) {
-          setIsLoadingApproved(false)
-        }
-      }
+    if (approvedQueryError && isUnauthorizedApiError(approvedQueryError)) {
+      onUnauthorized()
     }
-
-    void loadInitialApprovedTransactions()
-
-    return () => {
-      ignore = true
-    }
-  }, [accessToken, onUnauthorized, t])
+  }, [approvedQueryError, onUnauthorized])
 
   async function handleSubmit(request: CreateTransactionRequest) {
     if (!accessToken) {
@@ -156,16 +146,13 @@ export function TransactionDashboard({ accessToken, onUnauthorized, viewMode }: 
       return
     }
 
-    setIsSubmitting(true)
     setSubmitMessage(null)
 
     try {
-      const response = await createTransaction(request, accessToken)
+      const response = await createTransaction(request).unwrap()
       setSubmitMessage(interpolate(t('message.transactionSubmitted'), { id: shortId(response.transactionId) }))
     } catch (error) {
       handleApiError(error, onUnauthorized, (message) => setSubmitMessage(message), t)
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -174,7 +161,7 @@ export function TransactionDashboard({ accessToken, onUnauthorized, viewMode }: 
       <Grid container spacing={{ xs: 3, md: 5 }} sx={{ alignItems: 'center' }}>
         <Grid size={{ xs: 12, md: 5 }}>
           <FocusedTransactionForm
-            isSubmitting={isSubmitting}
+            isSubmitting={createTransactionResult.isLoading}
             isDisabled={!accessToken}
             onSubmit={handleSubmit}
           />
@@ -186,8 +173,8 @@ export function TransactionDashboard({ accessToken, onUnauthorized, viewMode }: 
 
       <Box sx={{ mt: 'auto' }}>
         <FocusedTransactionsViewer
-          error={approvedError}
-          isLoading={isLoadingApproved}
+          error={approvedCardsError}
+          isLoading={isApprovedLoading}
           transactions={approvedTransactions}
         />
       </Box>
@@ -221,7 +208,7 @@ export function TransactionDashboard({ accessToken, onUnauthorized, viewMode }: 
             </Alert>
           )}
           <TransactionForm
-            isSubmitting={isSubmitting}
+            isSubmitting={createTransactionResult.isLoading}
             isDisabled={!accessToken}
             onSubmit={handleSubmit}
           />
@@ -256,8 +243,8 @@ export function TransactionDashboard({ accessToken, onUnauthorized, viewMode }: 
 
       <Box sx={{ mt: 'auto' }}>
         <ApprovedTransactionCards
-          error={approvedError}
-          isLoading={isLoadingApproved}
+          error={approvedCardsError}
+          isLoading={isApprovedLoading}
           onRefresh={loadApprovedTransactions}
           showRefresh={!isRealtimeConnected}
           transactions={approvedTransactions}
@@ -391,20 +378,25 @@ function FocusedMarketingPanel() {
   )
 }
 
-function upsertApprovedTransaction(current: TransactionDto[], transaction: TransactionDto) {
+function upsertApprovedTransaction(transactions: TransactionDto[], transaction: TransactionDto) {
+  removeApprovedTransaction(transactions, transaction.id)
+
   if (transaction.status !== 'Approved') {
-    return current.filter((item) => item.id !== transaction.id)
+    return
   }
 
-  const withoutUpdated = current.filter((item) => item.id !== transaction.id)
-
-  return [transaction, ...withoutUpdated].sort((left, right) =>
+  transactions.unshift(transaction)
+  transactions.sort((left, right) =>
     right.createdAtUtc.localeCompare(left.createdAtUtc),
   )
 }
 
-function readError(error: unknown, t: ReturnType<typeof useLocalization>['t']) {
-  return error instanceof Error ? error.message : t('common.unexpectedError')
+function removeApprovedTransaction(transactions: TransactionDto[], transactionId: string) {
+  const existingIndex = transactions.findIndex((transaction) => transaction.id === transactionId)
+
+  if (existingIndex >= 0) {
+    transactions.splice(existingIndex, 1)
+  }
 }
 
 function handleApiError(
@@ -413,12 +405,12 @@ function handleApiError(
   onOtherError: (message: string) => void,
   t: ReturnType<typeof useLocalization>['t'],
 ) {
-  if (error instanceof UnauthorizedError) {
+  if (isUnauthorizedApiError(error)) {
     onUnauthorized()
     return
   }
 
-  onOtherError(readError(error, t))
+  onOtherError(readApiErrorMessage(error, t('common.unexpectedError')))
 }
 
 function shortId(id: string) {
