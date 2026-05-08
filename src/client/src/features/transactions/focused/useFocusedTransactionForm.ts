@@ -5,13 +5,13 @@ import { useLocalization } from '../../../app/LocalizationContext'
 import type { CreateTransactionRequest, RegionCode } from '../transactionTypes'
 import { regions } from '../transactionTypes'
 import {
-  formatTimeInputValue,
+  formatLocalTimeInputValue,
   isValidHour,
   isValidMinute,
   toDayjsTime,
   toTimeParts,
   toTimeString,
-  toUtcIsoStringForTimeZone,
+  toUtcIsoStringForLocalTime,
   wrapNumber,
   type TimeParts,
 } from '../utils/timeUtils'
@@ -65,7 +65,7 @@ export function useFocusedTransactionForm({ onSubmit }: UseFocusedTransactionFor
     }
   }, [t])
   const form = useForm<FocusedTransactionFormValues>({
-    defaultValues: createDefaultValues(timeZoneOptions[0].timeZone),
+    defaultValues: createDefaultValues(),
     resolver,
   })
   const { errors, isSubmitted } = form.formState
@@ -100,7 +100,6 @@ export function useFocusedTransactionForm({ onSubmit }: UseFocusedTransactionFor
       shouldTouch: true,
       shouldValidate: isSubmitted,
     })
-    setTimeParts(toTimeParts(formatTimeInputValue(new Date(), option.timeZone)))
   }
 
   function handleTimePartChange(part: keyof TimeParts, value: string, onComplete?: () => void) {
@@ -153,7 +152,6 @@ export function useFocusedTransactionForm({ onSubmit }: UseFocusedTransactionFor
     errors,
     handlePickerChange,
     handleSubmit: form.handleSubmit(async (values) => {
-      const timeZone = timeZoneOptions.find((option) => option.code === values.region) ?? timeZoneOptions[0]
       const submittedTime = {
         hour: values.hour,
         minute: values.minute,
@@ -163,8 +161,8 @@ export function useFocusedTransactionForm({ onSubmit }: UseFocusedTransactionFor
         amount: 125.5,
         currency: 'ILS',
         merchantName: 'Terminal 42',
-        region: timeZone.code,
-        submittedAt: toUtcIsoStringForTimeZone(toTimeString(submittedTime), timeZone.timeZone),
+        region: values.region,
+        submittedAt: toUtcIsoStringForLocalTime(toTimeString(submittedTime)),
       })
     }),
     handleTimePartBlur,
@@ -182,8 +180,8 @@ export function useFocusedTransactionForm({ onSubmit }: UseFocusedTransactionFor
   }
 }
 
-function createDefaultValues(timeZone: string): FocusedTransactionFormValues {
-  const currentTime = toTimeParts(formatTimeInputValue(new Date(), timeZone))
+function createDefaultValues(): FocusedTransactionFormValues {
+  const currentTime = toTimeParts(formatLocalTimeInputValue(new Date()))
 
   return {
     ...currentTime,

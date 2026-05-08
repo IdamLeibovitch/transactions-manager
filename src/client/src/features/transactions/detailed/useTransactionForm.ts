@@ -76,15 +76,21 @@ export function useTransactionForm({ onSubmit }: UseTransactionFormOptions) {
 }
 
 function toUtcIsoString(value: string) {
-  return `${value}:00Z`
+  const date = new Date(`${value}:00`)
+
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+
+  return date.toISOString()
 }
 
 function formatUtcInputValue(date: Date) {
-  const year = date.getUTCFullYear()
-  const month = `${date.getUTCMonth() + 1}`.padStart(2, '0')
-  const day = `${date.getUTCDate()}`.padStart(2, '0')
-  const hours = `${date.getUTCHours()}`.padStart(2, '0')
-  const minutes = `${date.getUTCMinutes()}`.padStart(2, '0')
+  const year = date.getFullYear()
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+  const hours = `${date.getHours()}`.padStart(2, '0')
+  const minutes = `${date.getMinutes()}`.padStart(2, '0')
 
   return `${year}-${month}-${day}T${hours}:${minutes}`
 }

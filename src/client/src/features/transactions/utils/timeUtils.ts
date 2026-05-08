@@ -18,6 +18,13 @@ export function formatTimeInputValue(date: Date, timeZone: string) {
   return `${hour}:${readPart(parts, 'minute')}`
 }
 
+export function formatLocalTimeInputValue(date: Date) {
+  const hour = `${date.getHours()}`.padStart(2, '0')
+  const minute = `${date.getMinutes()}`.padStart(2, '0')
+
+  return `${hour}:${minute}`
+}
+
 export function isValidHour(value: string) {
   return /^\d{1,2}$/.test(value) && Number(value) >= 0 && Number(value) <= 23
 }
@@ -46,6 +53,20 @@ export function toTimeParts(value: string): TimeParts {
 
 export function toTimeString(value: TimeParts) {
   return `${value.hour.padStart(2, '0')}:${value.minute.padStart(2, '0')}`
+}
+
+export function toUtcIsoStringForLocalTime(time: string) {
+  const [hours, minutes] = time.split(':').map(Number)
+  const now = new Date()
+
+  return new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    hours,
+    minutes,
+    0,
+  ).toISOString()
 }
 
 export function toUtcIsoStringForTimeZone(time: string, timeZone: string) {
