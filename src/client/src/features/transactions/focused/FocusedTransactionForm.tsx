@@ -179,9 +179,8 @@ export function FocusedTransactionForm({
                   </IconButton>
                 </Tooltip>
                 <Typography
-                  color="text.secondary"
                   id={timeHelperId}
-                  sx={{ direction, textAlign: 'end' }}
+                  sx={{ color: '#4f465f', direction, textAlign: 'end' }}
                   variant="body2"
                 >
                   {t('form.localTimeHelper')}
@@ -332,7 +331,11 @@ function TimePartInput({
           textAlign: 'center',
         },
         '& .MuiInputLabel-root': {
+          color: '#4f465f',
           fontWeight: 600,
+        },
+        '& .MuiInputLabel-root.Mui-focused': {
+          color: 'primary.main',
         },
         '& .MuiOutlinedInput-root': {
           bgcolor: error ? '#fff5f5' : '#f0e8ff',

@@ -58,7 +58,7 @@ const StaticTimePickerFrame = styled(Box)(({ theme }) => ({
     margin: '0 auto',
   },
   '& .MuiTypography-overline': {
-    color: theme.palette.text.secondary,
+    color: '#4f465f',
     fontSize: 11,
     lineHeight: 1.2,
     marginBottom: theme.spacing(0.5),
