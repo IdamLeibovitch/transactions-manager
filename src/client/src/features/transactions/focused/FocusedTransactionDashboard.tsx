@@ -102,6 +102,7 @@ function FocusedMarketingPanel() {
             }}
           >
             <Typography
+              component="p"
               sx={{
                 color: '#3d3d3f',
                 fontSize: { xs: '0.9rem', sm: '1rem' },
@@ -115,6 +116,7 @@ function FocusedMarketingPanel() {
             </Typography>
           </Box>
           <Typography
+            component="p"
             sx={{
               color: '#3a3a3d',
               fontSize: { xs: '1rem', sm: '1.15rem' },

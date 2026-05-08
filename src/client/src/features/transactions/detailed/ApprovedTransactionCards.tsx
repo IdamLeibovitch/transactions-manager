@@ -178,7 +178,7 @@ export function ApprovedTransactionCards({
                     </Typography>
                   </Stack>
                   <Box sx={{ flexGrow: 1 }}>
-                    <Typography sx={{ fontWeight: 700 }} variant="h6">
+                    <Typography component="h3" sx={{ fontWeight: 700 }} variant="h6">
                       {t('cards.timeTitle').replace(
                         '{time}',
                         formatLocalTime(transaction.localSubmittedAt, locale, t),

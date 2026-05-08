@@ -45,7 +45,7 @@ export function DetailedTransactionDashboard({
   return (
     <Stack spacing={3} sx={{ flexGrow: 1, width: '100%' }} useFlexGap>
       <Stack spacing={1}>
-        <Typography component="h2" sx={{ fontWeight: 700 }} variant="h4">
+        <Typography component="h1" sx={{ fontWeight: 700 }} variant="h4">
           {t('dashboard.title')}
         </Typography>
         <Typography color="text.secondary">
