@@ -49,6 +49,30 @@ public sealed class TransactionApprovalServiceTests
         Assert.Equal(new TimeOnly(8, 0), TimeOnly.FromDateTime(decision.LocalSubmittedAt));
     }
 
+    [Theory]
+    [InlineData(14, 0, TransactionStatus.Rejected, 7, 0)]
+    [InlineData(15, 0, TransactionStatus.Approved, 8, 0)]
+    public void Decide_ForUsEast_UsesSelectedRegionTimeForSubmittedInstant(
+        int israelHour,
+        int israelMinute,
+        TransactionStatus expectedStatus,
+        int expectedNewYorkHour,
+        int expectedNewYorkMinute)
+    {
+        DateTimeOffset israelSubmittedAt = new(2026, 5, 7, israelHour, israelMinute, 0, TimeSpan.FromHours(3));
+        TransactionSubmittedV1 transaction = CreateSubmittedTransaction(
+            Region: SupportedRegions.UsEast,
+            SubmittedAtUtc: israelSubmittedAt);
+
+        ApprovalDecision decision = approvalService.Decide(transaction);
+
+        Assert.Equal(expectedStatus, decision.Status);
+        Assert.Equal("America/New_York", decision.TimeZoneId);
+        Assert.Equal(
+            new TimeOnly(expectedNewYorkHour, expectedNewYorkMinute),
+            TimeOnly.FromDateTime(decision.LocalSubmittedAt));
+    }
+
     [Fact]
     public void Decide_WhenRegionIsUnsupported_RejectsTransaction()
     {
