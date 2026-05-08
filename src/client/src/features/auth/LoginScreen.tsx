@@ -8,7 +8,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useLocalization } from '../../app/LocalizationContext'
 import { isUnauthorizedApiError, readApiErrorMessage } from '../../shared/api/apiErrors'
 import { useLoginMutation } from '../../shared/api/apiSlice'
@@ -20,6 +20,7 @@ type LoginScreenProps = {
 
 export function LoginScreen({ onLogin }: LoginScreenProps) {
   const { t } = useLocalization()
+  const errorId = useId()
   const [username, setUsername] = useState('admin')
   const [password, setPassword] = useState('Pass123!')
   const [error, setError] = useState<string | null>(null)
@@ -71,8 +72,17 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
             </Typography>
           </Stack>
 
-          <Stack component="form" onSubmit={handleSubmit} spacing={2}>
-            {error && <Alert severity="error">{error}</Alert>}
+          <Stack
+            aria-describedby={error ? errorId : undefined}
+            component="form"
+            onSubmit={handleSubmit}
+            spacing={2}
+          >
+            {error && (
+              <Alert id={errorId} role="alert" severity="error">
+                {error}
+              </Alert>
+            )}
             <TextField
               autoComplete="username"
               autoFocus
@@ -80,6 +90,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
               fullWidth
               label={t('auth.username')}
               onChange={(event) => setUsername(event.target.value)}
+              required
               value={username}
             />
             <TextField
@@ -88,6 +99,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
               fullWidth
               label={t('auth.password')}
               onChange={(event) => setPassword(event.target.value)}
+              required
               type="password"
               value={password}
             />

@@ -132,6 +132,7 @@ export function FocusedTransactionForm({
                       value={submittedTime.hour}
                     />
                     <Typography
+                      aria-hidden="true"
                       sx={{
                         color: 'text.primary',
                         fontSize: { xs: 48, sm: 64 },

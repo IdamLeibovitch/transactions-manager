@@ -22,6 +22,7 @@ export function FocusedMarketingImages() {
 
   return (
     <Box
+      aria-hidden="true"
       sx={{
         height: 280,
         position: 'relative',
@@ -33,6 +34,7 @@ export function FocusedMarketingImages() {
           alt=""
           component="img"
           key={image}
+          role="presentation"
           src={image}
           sx={{
             display: 'block',

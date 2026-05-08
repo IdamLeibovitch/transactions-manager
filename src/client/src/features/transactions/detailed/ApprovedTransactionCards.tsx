@@ -11,7 +11,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material'
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
 import { useLocalization } from '../../../app/LocalizationContext'
 import { TransactionNavigationButton } from '../TransactionNavigationButton'
 import type { TransactionDto } from '../transactionTypes'
@@ -39,6 +39,7 @@ export function ApprovedTransactionCards({
   transactions,
 }: ApprovedTransactionCardsProps) {
   const { direction, locale, t } = useLocalization()
+  const headingId = useId()
   const listRef = useRef<HTMLDivElement | null>(null)
   const previousTransactionIdsRef = useRef<Set<string> | null>(null)
 
@@ -80,13 +81,13 @@ export function ApprovedTransactionCards({
   }
 
   return (
-    <Box>
+    <Box aria-labelledby={headingId} component="section">
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         spacing={1}
         sx={{ alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', mb: 2 }}
       >
-        <Typography component="h2" sx={{ fontWeight: 700 }} variant="h5">
+        <Typography component="h2" id={headingId} sx={{ fontWeight: 700 }} variant="h5">
           {t('cards.approvedTransactions')}
         </Typography>
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
@@ -96,7 +97,7 @@ export function ApprovedTransactionCards({
             label={t('cards.approvedCount').replace('{count}', String(transactions.length))}
           />
           {showRefresh && (
-            <Button onClick={onRefresh} startIcon={<RefreshIcon />} variant="outlined">
+            <Button onClick={onRefresh} startIcon={<RefreshIcon />} type="button" variant="outlined">
               {t('cards.refresh')}
             </Button>
           )}
@@ -118,13 +119,13 @@ export function ApprovedTransactionCards({
       </Stack>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert role="alert" severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
 
       {isLoading ? (
-        <Stack sx={{ alignItems: 'center', py: 6 }}>
+        <Stack aria-live="polite" role="status" sx={{ alignItems: 'center', py: 6 }}>
           <CircularProgress aria-label={t('cards.loading')} />
         </Stack>
       ) : transactions.length === 0 ? (
@@ -139,7 +140,11 @@ export function ApprovedTransactionCards({
       ) : (
         <Box
           dir={direction}
+          aria-busy={isLoading}
+          aria-live="polite"
+          aria-labelledby={headingId}
           ref={listRef}
+          role="list"
           sx={{
             display: 'flex',
             gap: 2,
@@ -155,6 +160,7 @@ export function ApprovedTransactionCards({
               data-transaction-card
               data-transaction-id={transaction.id}
               key={transaction.id}
+              role="listitem"
               variant="outlined"
               sx={{
                 flex: '0 0 auto',

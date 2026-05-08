@@ -10,7 +10,7 @@ import {
   useMediaQuery,
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useId, useMemo, useRef } from 'react'
 import { useLocalization } from '../../../app/LocalizationContext'
 import { TransactionNavigationButton } from '../TransactionNavigationButton'
 import type { RegionCode, TransactionDto } from '../transactionTypes'
@@ -45,6 +45,7 @@ export function FocusedTransactionsViewer({
   transactions,
 }: FocusedTransactionsViewerProps) {
   const { direction, locale, t } = useLocalization()
+  const headingId = useId()
   const theme = useTheme()
   const showSideButtons = useMediaQuery(theme.breakpoints.up('lg'))
   const listRef = useRef<HTMLDivElement | null>(null)
@@ -94,9 +95,9 @@ export function FocusedTransactionsViewer({
   }
 
   return (
-    <Box>
+    <Box aria-labelledby={headingId} component="section">
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-        <Typography component="h2" sx={{ fontWeight: 700 }} variant="h5">
+        <Typography component="h2" id={headingId} sx={{ fontWeight: 700 }} variant="h5">
           {t('cards.approvedTransactions')}
         </Typography>
 
@@ -119,13 +120,13 @@ export function FocusedTransactionsViewer({
       </Stack>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert role="alert" severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
 
       {isLoading ? (
-        <Stack sx={{ alignItems: 'center', py: 5 }}>
+        <Stack aria-live="polite" role="status" sx={{ alignItems: 'center', py: 5 }}>
           <CircularProgress aria-label={t('cards.loading')} />
         </Stack>
       ) : approvedTransactions.length === 0 ? (
@@ -149,7 +150,11 @@ export function FocusedTransactionsViewer({
 
             <Box
               dir={direction}
+              aria-busy={isLoading}
+              aria-live="polite"
+              aria-labelledby={headingId}
               ref={listRef}
+              role="list"
               sx={{
                 display: 'flex',
                 gap: 2,
@@ -166,6 +171,7 @@ export function FocusedTransactionsViewer({
                   data-focused-transaction-id={transaction.id}
                   dir={direction}
                   key={transaction.id}
+                  role="listitem"
                   variant="outlined"
                   sx={{
                     animation: `${focusedTransactionEnter} ${theme.transitions.duration.standard}ms ease 90ms both`,

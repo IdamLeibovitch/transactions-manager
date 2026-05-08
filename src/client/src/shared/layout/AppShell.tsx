@@ -67,6 +67,33 @@ export function AppShell({
 
   return (
     <Box sx={{ bgcolor: 'background.default', display: 'flex', flexDirection: 'column', minHeight: '100svh' }}>
+      <Box
+        component="a"
+        href="#main-content"
+        sx={{
+          bgcolor: 'background.paper',
+          border: 1,
+          borderColor: 'primary.main',
+          borderRadius: 1,
+          color: 'primary.main',
+          fontWeight: 700,
+          insetInlineStart: 16,
+          p: 1,
+          position: 'fixed',
+          top: 8,
+          transform: 'translateY(-160%)',
+          transition: 'transform 120ms ease',
+          zIndex: (theme) => theme.zIndex.tooltip + 1,
+          '&:focus': {
+            outline: 2,
+            outlineColor: 'primary.main',
+            outlineOffset: 2,
+            transform: 'translateY(0)',
+          },
+        }}
+      >
+        {t('common.skipToContent')}
+      </Box>
       <AppBar
         color="inherit"
         elevation={0}
@@ -90,15 +117,19 @@ export function AppShell({
               sx={{ direction: 'ltr' }}
             >
               <Button
+                aria-pressed={language === 'en'}
                 onClick={() => onLanguageChange('en')}
                 size="small"
+                type="button"
                 variant={language === 'en' ? 'contained' : 'outlined'}
               >
                 EN
               </Button>
               <Button
+                aria-pressed={language === 'he'}
                 onClick={() => onLanguageChange('he')}
                 size="small"
+                type="button"
                 variant={language === 'he' ? 'contained' : 'outlined'}
               >
                 עברית
@@ -133,13 +164,19 @@ export function AppShell({
                   }}
                 >
                   <MenuItem disabled>{username}</MenuItem>
-                  <MenuItem onClick={() => handleViewModeChange('focused')}>
+                  <MenuItem
+                    onClick={() => handleViewModeChange('focused')}
+                    selected={viewMode === 'focused'}
+                  >
                     <ListItemIcon>
                       {viewMode === 'focused' ? <CheckIcon fontSize="small" /> : <ViewCarouselIcon fontSize="small" />}
                     </ListItemIcon>
                     <ListItemText>{t('view.focused')}</ListItemText>
                   </MenuItem>
-                  <MenuItem onClick={() => handleViewModeChange('detailed')}>
+                  <MenuItem
+                    onClick={() => handleViewModeChange('detailed')}
+                    selected={viewMode === 'detailed'}
+                  >
                     <ListItemIcon>
                       {viewMode === 'detailed' ? <CheckIcon fontSize="small" /> : <ViewCarouselIcon fontSize="small" />}
                     </ListItemIcon>
@@ -160,7 +197,9 @@ export function AppShell({
 
       <Container
         component="main"
+        id="main-content"
         maxWidth="lg"
+        tabIndex={-1}
         sx={{
           display: 'flex',
           flexDirection: 'column',

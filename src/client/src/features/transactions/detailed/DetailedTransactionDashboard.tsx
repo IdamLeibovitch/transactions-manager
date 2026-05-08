@@ -109,7 +109,13 @@ export function DetailedTransactionDashboard({
         onClose={onSubmitMessageClose}
         open={Boolean(submitMessage)}
       >
-        <Alert onClose={onSubmitMessageClose} severity="info" variant="filled">
+        <Alert
+          aria-live="polite"
+          onClose={onSubmitMessageClose}
+          role="status"
+          severity="info"
+          variant="filled"
+        >
           {submitMessage}
         </Alert>
       </Snackbar>
